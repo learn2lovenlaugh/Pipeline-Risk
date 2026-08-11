@@ -1,0 +1,1234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Risk Plot — Leak and Rupture</title>
+<style>
+:root{
+  --ink:#1b1f24;--ink2:#4a545e;--ink3:#7c8894;
+  --rule:#d9dee4;--rule2:#eceff3;--paper:#f7f8fa;--card:#fff;
+  --accent:#0f6e56;
+  --c-indigo:#4a51a8;--c-indigo-b:#eeeffb;
+  --c-teal:#0f6e56;--c-teal-b:#e4f2ed;
+  --c-blue:#1e5b8f;--c-blue-b:#e8f1f9;
+  --c-coral:#a8452a;--c-coral-b:#fbeee9;
+  --c-plum:#7a3f7d;--c-plum-b:#f6ecf7;
+  --c-amber:#a8770f;--c-amber-b:#faf1dc;
+  --z1:#2f7d5a;--z1b:#e3f0e9;
+  --z2:#a8770f;--z2b:#faf0da;
+  --z3:#b23a34;--z3b:#fbe8e6;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);
+ font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:1440px;margin:0 auto;padding:26px 20px 90px}
+h1{font-size:21px;font-weight:600;margin:0 0 4px;letter-spacing:-.01em}
+.sub{color:var(--ink2);margin:0 0 22px}
+h2{font-size:15px;font-weight:600;margin:0 0 3px}
+h3{font-size:13.5px;font-weight:600;margin:0 0 3px}
+.hint{color:var(--ink3);font-size:13px;margin:0 0 12px}
+section{background:var(--card);border:1px solid var(--rule);border-top:3px solid var(--sc,#c3cbd4);
+ border-radius:6px;padding:16px 18px 19px;margin-bottom:16px}
+section.s-indigo{--sc:var(--c-indigo)}section.s-teal{--sc:var(--c-teal)}
+section.s-blue{--sc:var(--c-blue)}section.s-coral{--sc:var(--c-coral)}
+section.s-plum{--sc:var(--c-plum)}section.s-amber{--sc:var(--c-amber)}
+.masthead{background:linear-gradient(90deg,#123f63 0%,#1b6b57 100%);color:#fff;border-radius:7px;
+ padding:20px 22px;margin-bottom:18px}
+.masthead h1{color:#fff;margin:0 0 5px}
+.masthead p{margin:0;color:#d5e6e6;font-size:13.5px;max-width:none}
+.eyebrow{font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700;margin-bottom:7px;
+ color:var(--sc,#7c8894);display:flex;align-items:center;gap:8px}
+.eyebrow .bdg{background:var(--sc,#7c8894);color:#fff;border-radius:4px;padding:1px 7px;letter-spacing:.04em}
+details{border:1px solid var(--rule);border-radius:5px;margin-bottom:10px;background:var(--card)}
+details[open]{background:#fcfcfe}
+details[open]>summary{background:var(--c-indigo-b);color:var(--c-indigo)}
+summary{cursor:pointer;padding:11px 15px;font-weight:600;font-size:13.5px;list-style:none;display:flex;
+ justify-content:space-between;align-items:center;border-left:3px solid var(--c-indigo);border-radius:5px 0 0 5px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--ink3);font-weight:400;font-size:17px;line-height:1}
+details[open]>summary::after{content:"\2212"}
+summary:hover{background:var(--c-indigo-b)}
+.dbody{padding:2px 16px 15px;color:var(--ink2);font-size:13.5px}
+.dbody p{margin:0 0 9px}
+.dbody p:last-child{margin-bottom:0}
+.tblwrap{overflow-x:auto;border:1px solid var(--rule);border-radius:4px;max-height:none}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:var(--card)}
+th,td{padding:5px 7px;text-align:left;border-bottom:1px solid var(--rule2);white-space:nowrap}
+thead th{background:#f2f4f7;font-weight:600;color:var(--ink2);font-size:11px;
+ border-bottom:1px solid var(--rule);vertical-align:bottom;position:relative}
+thead th.grp{text-align:center;letter-spacing:.07em;text-transform:uppercase;font-size:10px;font-weight:700}
+thead th.grpL{background:var(--c-blue-b);color:var(--c-blue)}
+thead th.grpR{background:var(--c-coral-b);color:var(--c-coral)}
+tbody tr:hover{background:#fafbfc}
+input,select{font:inherit;font-size:12.5px;border:1px solid var(--rule);border-radius:3px;
+ padding:3px 5px;background:#fff;color:var(--ink);width:100%}
+input:focus,select:focus{outline:2px solid #b9d3e8;outline-offset:-1px;border-color:#7fa8c9}
+input[type=number]{text-align:right;font-variant-numeric:tabular-nums}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+td.dim input,td.dim select{background:#f4f6f8;color:#9aa5b1}
+td.nm,td.nm input{min-width:206px}
+td.cat,td.cat input{min-width:150px}
+td.nm input,td.cat input{text-align:left}
+td.sel{min-width:104px}
+td.w1{min-width:64px}td.w2{min-width:76px}td.w3{min-width:88px}
+td.w4{min-width:100px}td.w5{min-width:116px}
+.ib{border:none;background:none;color:#8d99a5;cursor:pointer;font-size:11px;padding:0 0 0 3px;
+ font-weight:700;vertical-align:1px}
+.ib:hover{color:var(--accent)}
+#pop{position:absolute;z-index:50;max-width:330px;background:#fff;border:1px solid #c4ccd4;
+ border-radius:6px;box-shadow:0 6px 20px rgba(20,30,40,.16);padding:11px 13px;font-size:12.5px;
+ line-height:1.5;color:var(--ink2);display:none;white-space:normal}
+#pop b{color:var(--ink);display:block;margin-bottom:3px;font-size:12.5px}
+#pop .rng{display:block;margin-top:6px;padding-top:6px;border-top:1px solid var(--rule2);color:var(--ink3)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px;align-items:center}
+button{font:inherit;font-size:13px;padding:6px 13px;border:1px solid var(--rule);background:#fff;
+ color:var(--ink);border-radius:4px;cursor:pointer}
+button:hover{background:#f2f4f7;border-color:#bcc5cf}
+button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:500}
+button.primary:hover{background:#0c5a46}
+.globals{display:grid;grid-template-columns:repeat(auto-fit,minmax(168px,1fr));gap:12px 16px}
+.fld.lim1 label{color:var(--z1)}.fld.lim1 input{border-color:#9cc4b1;background:#fbfefc}
+.fld.lim3 label{color:var(--z3)}.fld.lim3 input{border-color:#e0aaa6;background:#fffcfb}
+.fld label{display:block;font-size:11px;letter-spacing:.02em;color:var(--ink3);text-transform:uppercase;
+ font-weight:600;margin-bottom:3px}
+.fh{font-size:11.5px;color:var(--ink3);margin-top:3px;line-height:1.4;text-transform:none;letter-spacing:0;font-weight:400}
+.plots{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1020px){.plots{grid-template-columns:1fr}}
+.plotcard{border:1px solid var(--rule);border-top:3px solid var(--pc,#c3cbd4);border-radius:5px;padding:12px 12px 9px}
+.plotcard.pL{--pc:var(--c-blue)}.plotcard.pR{--pc:var(--c-coral)}
+.plotcard.pL .plottitle{color:var(--c-blue)}.plotcard.pR .plottitle{color:var(--c-coral)}
+.plothead{display:flex;justify-content:space-between;align-items:baseline;margin:0 2px 5px}
+.plottitle{font-size:14px;font-weight:600}
+.plotnote{font-size:11.5px;color:var(--ink3)}
+svg{display:block;width:100%;height:auto}
+.keylist{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:4px 18px;margin:12px 0 0}
+.keyitem{display:flex;gap:8px;align-items:baseline;font-size:12.5px;color:var(--ink2);cursor:pointer;
+ padding:3px 6px;border-radius:4px}
+.keyitem:hover{background:#f2f4f7}
+.keyitem.on{background:#eef2f6;color:var(--ink);font-weight:500}
+.keyitem .kn{min-width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;
+ justify-content:center;font-size:11px;font-weight:700;border:1.5px solid}
+tbody tr.hl{background:#eef2f6 !important;box-shadow:inset 3px 0 0 var(--c-indigo)}
+.legend{display:flex;gap:15px;flex-wrap:wrap;font-size:11.5px;color:var(--ink2);margin:9px 2px 0;align-items:center}
+.sw{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px;border-radius:2px}
+.num-r{text-align:right;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--ink2);background:var(--nb,#f4f6f8);border-left:3px solid var(--ns,#c3cbd4);
+ padding:9px 12px;margin-top:13px;border-radius:0 3px 3px 0;white-space:normal}
+.note b{font-weight:600;color:var(--ink)}
+.startgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px;margin-bottom:4px}
+.sc{background:#fdfaf3;border:1px solid #f0e4cb;border-radius:6px;padding:12px 14px}
+.sc .sn{width:22px;height:22px;border-radius:50%;background:var(--c-amber);color:#fff;font-size:12px;
+ font-weight:700;display:flex;align-items:center;justify-content:center;margin-bottom:7px}
+.sc h3{margin:0 0 4px}
+.sc p{margin:0;font-size:12.5px;color:var(--ink2);line-height:1.5}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:11px;margin-bottom:15px}
+.kpi{background:var(--kb,#f4f6f8);border-left:3px solid var(--ks,#c3cbd4);border-radius:0 5px 5px 0;padding:10px 13px}
+.kpi.k1{--kb:var(--c-blue-b);--ks:var(--c-blue)}.kpi.k2{--kb:var(--c-coral-b);--ks:var(--c-coral)}
+.kpi.k3{--kb:var(--c-plum-b);--ks:var(--c-plum)}.kpi.k4{--kb:var(--c-amber-b);--ks:var(--c-amber)}
+.kpi.k5{--kb:var(--c-teal-b);--ks:var(--c-teal)}.kpi.k6{--kb:var(--c-indigo-b);--ks:var(--c-indigo)}
+.kpi .k{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);font-weight:600}
+.kpi .v{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;margin-top:2px;color:var(--ks,var(--ink))}
+.del{color:var(--ink3);cursor:pointer;border:none;background:none;font-size:15px;padding:0 4px;line-height:1}
+.del:hover{color:#b23a34}
+#status{font-size:12.5px;color:var(--ink3);margin-left:6px}
+.pill{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11px;font-weight:600}
+.p1{background:var(--z1b);color:var(--z1)}.p2{background:var(--z2b);color:var(--z2)}.p3{background:var(--z3b);color:var(--z3)}
+.rec{border:1px solid var(--rule);border-left:3px solid var(--rc,#c3cbd4);border-radius:0 5px 5px 0;
+ padding:13px 16px;margin-bottom:10px;background:var(--rbg,#fff)}
+.rec.r1{--rc:var(--z1);--rbg:#fbfdfc}.rec.r2{--rc:var(--z2);--rbg:#fffdf8}.rec.r3{--rc:var(--z3);--rbg:#fffbfa}
+.rechead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:7px;flex-wrap:wrap}
+.rec ol{margin:7px 0 0;padding-left:19px}
+.rec li{margin-bottom:5px;color:var(--ink2);font-size:13px;white-space:normal}
+.rec li b{color:var(--ink)}
+.drv{font-size:12px;color:var(--ink3);white-space:normal}
+textarea{width:100%;min-height:110px;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+ border:1px solid var(--rule);border-radius:4px;padding:8px 10px;resize:vertical}
+.calc{font:12.5px/1.7 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:#fbfcfd;
+ border:1px solid var(--rule);border-radius:5px;padding:13px 15px;white-space:pre-wrap;color:var(--ink2);
+ overflow-x:auto}
+.calc .h{color:var(--ink);font-weight:700;display:block;margin:12px 0 3px}
+.calc .h:first-child{margin-top:0}
+.calc .r{color:var(--c-teal);font-weight:700;background:var(--c-teal-b);display:block;padding:2px 8px;border-radius:3px}
+pre.eq{background:#f7f9fb;border:1px solid var(--rule);border-left:3px solid var(--c-plum);
+ border-radius:0 4px 4px 0;padding:11px 14px;margin:9px 0 11px;overflow-x:auto;
+ font:12.5px/1.75 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--ink)}
+.calc .h{border-bottom:1px solid var(--c-indigo-b);padding-bottom:3px;color:var(--c-indigo)}
+</style>
+</head>
+<body>
+<div id="pop"></div>
+<div class="wrap">
+
+<h1>Pipeline risk plot — leak and rupture</h1>
+<p class="sub">Enter what you know about each line, from ILI, from leak history, or from an estimate. The tool converts it to an annual probability of failure, splits leak from rupture, prices both, and plots them against your acceptance limits.</p>
+
+<section class="s-amber">
+  <div class="eyebrow"><span class="bdg">Start here</span> If this is your first time</div>
+  <h2>What to gather, and what you get back</h2>
+  <p class="hint">You do not need to understand the maths to get a usable answer. You do need four things per line type.</p>
+  <div class="startgrid">
+    <div class="sc"><div class="sn">1</div><h3>What the pipe is</h3>
+      <p>Diameter, wall thickness, steel grade and the pressure it normally runs at. From the line list. Grade converts to SMYS: Gr B is 35,000 psi, X42 is 42,000, X52 is 52,000, X60 is 60,000.</p></div>
+    <div class="sc"><div class="sn">2</div><h3>Some evidence of condition</h3>
+      <p>Any one of three will do. An inspection result. Or a count of leaks with the mileage and number of years that count covers. Or, if you have neither, a corrosion rate and the age of the line. Pick whichever you actually have &mdash; the tool changes its maths to suit.</p></div>
+    <div class="sc"><div class="sn">3</div><h3>What a failure would cost</h3>
+      <p>Roughly, in dollars: cleaning up what escapes, the production you lose while it is down, and the repair. Once for a small leak and once for a full rupture. Rough is fine; order of magnitude is what matters.</p></div>
+    <div class="sc"><div class="sn">4</div><h3>Your limits</h3>
+      <p>The dollars-per-mile-per-year below which you would not act, and above which you must. If you have never set these, start with the defaults and adjust once you see where your fleet lands.</p></div>
+  </div>
+  <div class="note" style="--nb:var(--c-amber-b);--ns:var(--c-amber)"><b>What comes back.</b> Two charts showing every line class against your limits, a table of the numbers behind them, a ranked list of what would actually reduce the risk on each line, and a full worked calculation for any line you pick, so you can show anyone exactly where a number came from.</div>
+</section>
+
+<section class="s-indigo">
+  <div class="eyebrow"><span class="bdg">Basis</span> How the numbers are produced</div>
+  <h2>How this works</h2>
+  <p class="hint">Open any heading for the detail. None of it is needed to use the tool.</p>
+
+  <details><summary>The short version</summary><div class="dbody">
+    <p>Corrosion does not fail a pipe on schedule. It fails at the worst spot. A rate of 35 mpy is an average across the line, and the line fails when its worst location arrives, not when the average does. Everything else follows from that.</p>
+    <p>Probability of failure is the chance that the worst feature crosses its limit during the next twelve months, given that you do not know exactly how fast the metal is going away or exactly how deep it is today. Risk is that probability multiplied by what the failure costs. Two plots, because a leak and a rupture on the same pipe are usually an order of magnitude apart in cost.</p>
+  </div></details>
+
+  <details><summary>Why leak and rupture are separate</summary><div class="dbody">
+    <p>A small pit eats through the wall and the line leaks. A long stretch of thinning loses so much strength that the pipe splits open at its normal operating pressure. Which one happens is decided by pressure, wall, diameter and grade, not by preference.</p>
+    <p>The tool solves the Modified B31G burst equation for the depth at which the line would split. If that depth is above 100% of wall, the pipe perforates before it can burst, and it cannot rupture from corrosion at all &mdash; it disappears from the rupture plot. Low pressure gathering usually lands here; high pressure trunklines usually do not.</p>
+  </div></details>
+
+  <details><summary>How a corrosion rate becomes a probability</summary><div class="dbody">
+    <p>Three things are uncertain: how fast the metal is going away, how deep the deepest spot is right now, and how accurate the burst equation is. The tool draws thousands of combinations of the last two and integrates the corrosion rate analytically, which lets it resolve probabilities far smaller than a plain simulation could.</p>
+    <p>For each combination it works out the rate that would be needed to reach the limit within the year, then asks how much of the rate distribution sits above that. Average across the draws and you have the probability for one feature. Combine across features and divide by length to get a rate per mile-year.</p>
+  </div></details>
+
+  <details><summary>How leak history becomes a probability</summary><div class="dbody">
+    <p>When a line class has a real leak record, that record is better evidence than any corrosion model, and the tool uses it directly: leaks divided by mile-years of exposure. No wall thickness, no growth rate, no assumption about what the inhibitor achieved.</p>
+    <p>A class with no leaks does not have a probability of zero. The tool applies a Jeffreys prior, which gives roughly one half of a leak over the exposure you actually accumulated &mdash; small, non-zero, and defensible.</p>
+  </div></details>
+
+  <details><summary>Why the calculation uses random draws, and why the number has nothing to do with your fleet size</summary><div class="dbody">
+    <p>Suppose your inspection says the deepest spot is 40% of wall, and the tool is accurate to plus or minus 10%. The truth could be 32% or 48%. Suppose the corrosion rate averages 6 mpy but varies from place to place. You could pick one value for each, do one calculation, and get one answer &mdash; but that answer would pretend you know things you do not.</p>
+    <p>So instead the model tries thousands of combinations. Deep and fast. Shallow and slow. Deep and slow. Every plausible pairing, weighted by how likely it is. Then it asks: in what share of those combinations does the pipe reach its limit inside the year? That share is the probability of failure. The technique has a name, Monte Carlo, but the name matters less than the reason: it is how you get an answer that carries your uncertainty rather than hiding it.</p>
+    <p><b>The number of draws is a setting on the arithmetic, not a count of anything real.</b> It is not lines, not features, not miles. A fleet of 3,000 lines and a fleet of three use exactly the same setting, because the draws are spent on one representative feature at a time. Each line class gets its own calculation.</p>
+    <p><b>If someone asks whether you simulated the fleet, the accurate answer is no.</b> What you did was calculate each line class separately, allowing for the fact that the depth and the growth rate are not known exactly. That is a fair sentence to put in front of management, and it is defensible if anyone pushes on it.</p>
+  </div></details>
+
+  <details><summary>What the tool is not</summary><div class="dbody">
+    <p>This is a screening and comparison tool. It works on a representative feature for each line, not on your dig list. Use it to decide where to look and what to fund. Use a full fitness-for-service assessment to decide whether a specific joint stays in the ground.</p>
+    <p>Features are treated as independent, which is conservative, because real corrosion is spatially correlated. And every number it produces should be checked against your own failure history before anyone sees it.</p>
+  </div></details>
+</section>
+
+<section class="s-teal">
+  <div class="eyebrow"><span class="bdg">Step 1</span> Set the rules</div>
+  <h2>Risk basis and acceptance limits</h2>
+  <p class="hint">These apply to every line. The two limits at the top of the second row are what colour the charts.</p>
+  <div class="globals">
+    <div class="fld"><label>Risk horizon</label>
+      <select id="g_year">
+        <option value="0" selected>Today &mdash; next 12 months</option>
+        <option value="3">In 3 years, if nothing changes</option>
+        <option value="5">In 5 years, if nothing changes</option>
+        <option value="10">In 10 years, if nothing changes</option>
+      </select>
+      <div class="fh">Today is the number management asks for. The forward views show where the fleet goes without intervention &mdash; useful as a second slide, not the first.</div></div>
+    <div class="fld lim1"><label>Acceptable below</label><input type="number" id="g_a" value="100" step="50" min="0">
+      <div class="fh">Dollars of risk per mile per year. Below this, no action is justified on risk grounds alone. Shades the chart green.</div></div>
+    <div class="fld lim3"><label>Unacceptable above</label><input type="number" id="g_b" value="5000" step="500" min="0">
+      <div class="fh">Above this, action is required whatever it costs. Shades the chart red. Anything between the two is tolerable, shaded amber.</div></div>
+    <div class="fld"><label>Leaks from other causes</label><input type="number" id="g_bl" value="0.0002" step="0.00005" min="0">
+      <div class="fh">Pipe fails for reasons corrosion modelling cannot see: an excavator, a bad girth weld, ground movement. Enter your own rate as leaks divided by mile-years. Example: 3 dig-ins across 1,500 miles over 10 years is 3 &divide; 15,000 = 0.0002.</div></div>
+    <div class="fld"><label>Ruptures from other causes</label><input type="number" id="g_br" value="0.00002" step="0.00001" min="0">
+      <div class="fh">Same idea, counting only full ruptures. Same sum: ruptures divided by mile-years. Usually five to ten times below the leak figure. If you have never had one, the default is a reasonable placeholder.</div></div>
+    <div class="fld"><label>Plot points as</label>
+      <select id="g_grp"><option value="line">One point per line entry</option><option value="cat">Rolled up by category</option></select>
+      <div class="fh">Roll up when one category holds several sizes. Risk sums; the point is placed to match the total.</div></div>
+    <div class="fld"><label>Burst equation scatter</label><input type="number" id="g_mcov" value="0.10" step="0.01" min="0">
+      <div class="fh">How much the burst formula misses by against real burst tests. Leave at 0.10 unless you have your own validation data.</div></div>
+    <div class="fld"><label>Calibration factor</label><input type="number" id="g_cal" value="1" step="0.1" min="0.01">
+      <div class="fh">Multiplies model-derived probabilities only. Leave at 1 until the model check below tells you what it should be. Lines running on leak history are never scaled &mdash; they are already your own record.</div></div>
+    <div class="fld"><label>Calculation precision</label>
+      <select id="g_n"><option value="20000" selected>Standard</option><option value="60000">High &mdash; slower</option></select>
+      <div class="fh">How many uncertainty combinations the arithmetic tries. This is a setting on the maths, not a count of your lines &mdash; 3,000 lines and 3 lines use the same setting. High only smooths the result slightly.</div></div>
+  </div>
+</section>
+
+<section class="s-blue">
+  <div class="eyebrow"><span class="bdg">Step 2</span> Describe the lines</div>
+  <h2>Lines</h2>
+  <p class="hint">One row per distinct combination of size, wall and pressure. Rows sharing a category name roll up together. Click the small i on any heading for guidance on that field. Fields not used by the chosen evidence basis are greyed.</p>
+  <div class="tblwrap"><table id="t_int"><thead><tr id="h_int"></tr></thead><tbody></tbody></table></div>
+  <div class="btnrow">
+    <button onclick="addRow()">Add line</button>
+    <button onclick="loadDemo()">Load worked example</button>
+    <button onclick="clearAll()">Clear all</button>
+  </div>
+</section>
+
+<section class="s-coral">
+  <div class="eyebrow"><span class="bdg">Step 3</span> Price a failure</div>
+  <h2>Consequence</h2>
+  <p class="hint">Leak and rupture priced separately. For gas, leave release volume at zero and put the whole impact in deferred production.</p>
+  <div class="tblwrap"><table id="t_cof"><thead><tr id="h_cof1"></tr><tr id="h_cof2"></tr></thead><tbody></tbody></table></div>
+  <div class="btnrow">
+    <button class="primary" onclick="run()">Generate risk plots</button>
+    <span id="status"></span>
+  </div>
+</section>
+
+<section class="s-amber">
+  <div class="eyebrow"><span class="bdg">Optional</span> Bring data in from a sheet</div>
+  <h2>Load from a spreadsheet</h2>
+  <p class="hint">Select the block in Excel including the header row, copy, and paste below. Tab or comma separated both work. Download the template first to get the column order right.</p>
+  <textarea id="paste" placeholder="Paste rows copied from Excel here, including the header row."></textarea>
+  <div class="btnrow">
+    <button onclick="importPaste()">Load pasted rows</button>
+    <button onclick="downloadTemplate()">Download blank template</button>
+    <button onclick="exportInputs()">Export current inputs</button>
+    <span id="impstatus" style="font-size:12.5px;color:var(--ink3)"></span>
+  </div>
+  <div class="note" style="--nb:var(--c-amber-b);--ns:var(--c-amber)">A single file with no external libraries cannot open a binary .xlsx directly. Pasting from the sheet gets you the same result in one step, and exporting your inputs gives you a file you can keep in the sheet alongside everything else.</div>
+</section>
+
+<section id="out" class="s-plum" style="display:none">
+  <div class="eyebrow"><span class="bdg">Result</span> Where each line sits</div>
+  <h2>Risk position</h2>
+  <p class="hint">Both plots share identical axes. Bands are your acceptance limits: anything up and to the right is worse. Circles are liquid, squares are gas.</p>
+  <div class="kpis" id="kpis"></div>
+  <div class="plots">
+    <div class="plotcard pL"><div class="plothead"><span class="plottitle">Leak</span><span class="plotnote" id="n_leak"></span></div><div id="p_leak"></div></div>
+    <div class="plotcard pR"><div class="plothead"><span class="plottitle">Rupture</span><span class="plotnote" id="n_rupt"></span></div><div id="p_rupt"></div></div>
+  </div>
+  <div class="legend">
+    <span><span class="sw" style="background:var(--z1b);border:1px solid var(--z1)"></span>Acceptable</span>
+    <span><span class="sw" style="background:var(--z2b);border:1px solid var(--z2)"></span>Tolerable</span>
+    <span><span class="sw" style="background:var(--z3b);border:1px solid var(--z3)"></span>Unacceptable</span>
+    <span>&#9679; liquid &nbsp; &#9632; gas</span>
+    <span>Marker area &prop; exposure</span>
+    <span>Click a number to highlight its row</span>
+  </div>
+  <div id="keylist"></div>
+
+  <h2 style="margin-top:25px">Detail</h2>
+  <div class="tblwrap"><table id="t_res"><thead></thead><tbody></tbody></table></div>
+  <div class="note" id="diag" style="--nb:var(--c-plum-b);--ns:var(--c-plum)"></div>
+  <div class="btnrow">
+    <button onclick="exportCSV()">Download results CSV</button>
+    <button onclick="exportPNG('leak')">Download leak plot</button>
+    <button onclick="exportPNG('rupt')">Download rupture plot</button>
+  </div>
+</section>
+
+<section id="recs" class="s-teal" style="display:none">
+  <div class="eyebrow"><span class="bdg">Action</span> What to do about it</div>
+  <h2>What would move each line</h2>
+  <p class="hint">Ranked by how much risk each action removes, given where the line actually sits. Inspection reduces uncertainty, chemical and cleaning programmes reduce the rate, and valves, detection and redundancy reduce consequence &mdash; three different budgets.</p>
+  <div id="reclist"></div>
+</section>
+
+<section id="check" class="s-coral" style="display:none">
+  <div class="eyebrow"><span class="bdg">Model check</span> Does this agree with what actually happened</div>
+  <h2>Alignment with your own failure record</h2>
+  <p class="hint">Enter what the fleet actually did. The tool already knows what it predicts. The comparison is the single most useful slide you can take into a review.</p>
+  <div class="globals" style="margin-bottom:14px">
+    <div class="fld"><label>Years of record</label><input type="number" id="v_yr" value="10" step="1" min="1">
+      <div class="fh">How many years the counts below cover.</div></div>
+    <div class="fld"><label>Leaks recorded</label><input type="number" id="v_lk" value="46" step="1" min="0">
+      <div class="fh">Loss-of-containment events across the whole fleet over that period, all causes.</div></div>
+    <div class="fld"><label>Ruptures recorded</label><input type="number" id="v_rp" value="0" step="1" min="0">
+      <div class="fh">Full ruptures only, counted separately. Zero is common and is handled properly below.</div></div>
+    <div class="fld" style="align-self:end"><button class="primary" onclick="checkModel()" style="width:100%">Compare</button></div>
+  </div>
+  <div id="chkout"></div>
+</section>
+
+<section class="s-plum">
+  <div class="eyebrow"><span class="bdg">Reference</span> Equations, sources and how to validate</div>
+  <h2>Model equations and scientific basis</h2>
+  <p class="hint">Everything the tool computes, in the form an independent reviewer would need to reproduce it by hand.</p>
+
+  <details><summary>1 &mdash; Remaining strength of corroded pipe</summary><div class="dbody">
+    <p>Burst pressure of a blunt metal-loss defect, Modified B31G (the 0.85dL area method):</p>
+    <pre class="eq">P_f = (2 t &sigma;_flow / D) &times; [1 &minus; 0.85 (d/t)] / [1 &minus; 0.85 (d/t) / M]
+
+&sigma;_flow = SMYS + 10,000 psi
+M      = &radic;(1 + 0.6275 &lambda; &minus; 0.003375 &lambda;&sup2;)   for &lambda; &le; 50
+M      = 0.032 &lambda; + 3.3                     for &lambda; &gt; 50
+&lambda;      = L&sup2; / (D t)</pre>
+    <p>M is the Folias bulging factor, which accounts for the fact that a long defect in a pressurised shell bulges outward and fails at a lower pressure than a short one of the same depth. This is why length, not just depth, decides whether a line ruptures.</p>
+    <p>Setting P_f equal to operating pressure and solving for depth gives the critical depth the tool reports:</p>
+    <pre class="eq">(d/t)_crit = (1 &minus; r) / [0.85 (1 &minus; r/M)]     where r = P_op / (2 t &sigma;_flow / D)</pre>
+    <p>If this solves above 1.0 the defect perforates before the pipe can burst, and the line is leak-only at that operating stress.</p>
+  </div></details>
+
+  <details><summary>2 &mdash; Damage growth and the limit state</summary><div class="dbody">
+    <p>Depth grows linearly from the measured value at the measured corrosion rate:</p>
+    <pre class="eq">d(T) = d&#8320; + CR &middot; T
+
+Limit state:   g(T) = d_crit &minus; d(T)      failure when g &le; 0</pre>
+    <p>Two limit states run in parallel. A short pit has d_crit = 1.0 and produces a leak. A long defect has d_crit from the equation above and produces a rupture. Long is taken as L &asymp; 3&radic;(D t), which is roughly where the Folias factor stops being close to unity.</p>
+  </div></details>
+
+  <details><summary>3 &mdash; Turning that into a probability</summary><div class="dbody">
+    <p>Three inputs are treated as uncertain rather than fixed:</p>
+    <pre class="eq">CR  ~ lognormal      &sigma;_ln = &radic;(ln(1 + COV&sup2;)),  &mu; = ln(CR&#772;) &minus; &sigma;_ln&sup2;/2
+d&#8320;  ~ normal         &sigma;_d = tol / 1.2816        (&plusmn;tol at 80% certainty)
+&psi;   ~ normal         mean 1, COV as set          (burst equation error)</pre>
+    <p>For a given draw of depth and burst error, the rate that would be needed to reach the limit within time T follows directly, and the share of the rate distribution above it is a closed-form lognormal tail. Averaging over draws gives the cumulative probability:</p>
+    <pre class="eq">F(T) = E[ 1 &minus; &Phi;( (ln CR_req &minus; &mu;) / &sigma;_ln ) ]      CR_req = (d_crit&middot;&psi; &minus; d&#8320;) &middot; t &middot; 1000 / T</pre>
+    <p>Integrating the rate analytically rather than sampling it is what lets the tool resolve probabilities far below one in the number of draws. The annual conditional hazard, which is what gets plotted, is the increment over the surviving fraction:</p>
+    <pre class="eq">h(T) = [ F(T+1) &minus; F(T) ] / [ 1 &minus; F(T) ]</pre>
+  </div></details>
+
+  <details><summary>4 &mdash; Combining features, threats and lines</summary><div class="dbody">
+    <p>Features are combined as an independent series system, evaluated in log space so that very small probabilities do not cancel to zero:</p>
+    <pre class="eq">P_line = 1 &minus; (1 &minus; p_short)^n_short &middot; (1 &minus; p_long)^n_long
+       = &minus;expm1[ n_short&middot;ln(1&minus;p_short) + n_long&middot;ln(1&minus;p_long) ]</pre>
+    <p>Corrosion is then combined with the non-corrosion background rate the same way, and divided by line length:</p>
+    <pre class="eq">P_total = 1 &minus; (1 &minus; P_corrosion)(1 &minus; P_background)
+PoF per mile-year = P_total / L</pre>
+    <p>Independence between features is conservative, because real corrosion is spatially correlated.</p>
+  </div></details>
+
+  <details><summary>5 &mdash; The leak-history route</summary><div class="dbody">
+    <p>Where a class has a real failure record, no corrosion model is used at all:</p>
+    <pre class="eq">&lambda; = (n_failures + 0.5) / E          E = exposure in mile-years</pre>
+    <p>The half is the Jeffreys non-informative prior for a Poisson rate. It is what stops a class with no recorded leaks reading as zero risk, and it is standard practice for zero-failure reliability data.</p>
+  </div></details>
+
+  <details><summary>6 &mdash; Consequence and risk</summary><div class="dbody">
+    <pre class="eq">C = V&middot;c + Q&middot;D&middot;m + R
+
+V = volume released      c = remediation cost per unit volume
+Q = production deferred  D = days down       m = netback per unit
+R = repair and restoration cost
+
+Risk per mile-year   = PoF &times; C
+Fleet risk per year  = PoF &times; C &times; (number of lines) &times; (length each)</pre>
+    <p>Everything is priced in dollars because that is the only common unit in which a gas line and an oil line can be compared. Leak and rupture are priced separately and never summed into a single consequence.</p>
+  </div></details>
+
+  <details><summary>Sources</summary><div class="dbody">
+    <p><b>Remaining strength.</b> ASME B31G, Manual for Determining the Remaining Strength of Corroded Pipelines. Kiefner and Vieth, A Modified Criterion for Evaluating the Remaining Strength of Corroded Pipe, AGA/PRCI project PR 3-805, 1989 &mdash; the origin of the 0.85dL method used here. Folias, on the bulging of an axially cracked pressurised shell, 1965 &mdash; the bulging factor. DNV-RP-F101, Corroded Pipelines, is the main alternative capacity equation and generally gives higher allowable depths; worth running as a cross-check.</p>
+    <p><b>Fitness for service.</b> API 579-1 / ASME FFS-1, Parts 4 and 5, general and local metal loss.</p>
+    <p><b>Risk framework.</b> API RP 581, Risk-Based Inspection Methodology &mdash; the damage-factor and generic-failure-frequency structure, and consequence expressed in dollars. API RP 1160 for hazardous liquid pipelines and ASME B31.8S for gas, for threat categorisation and the integrity management framework. Muhlbauer, Pipeline Risk Management Manual, for the relative-scoring alternative to a probabilistic model.</p>
+    <p><b>Probabilistic treatment.</b> Ahammed and Melchers, probabilistic analysis of corroding underground pipelines, Engineering Structures, 1997 &mdash; the limit-state formulation. Caleyo and co-workers, on the probability distribution of pitting depth and rate in underground pipelines, Corrosion Science, 2009 &mdash; support for lognormal rate distributions and the COV ranges suggested in the field guidance.</p>
+    <p><b>Zero-failure data.</b> Jeffreys prior for a Poisson rate; see the NRC Handbook of Parameter Estimation for Probabilistic Risk Assessment, NUREG/CR-6823, for the standard treatment.</p>
+    <p><b>Inspection tolerance.</b> API 1163, In-Line Inspection Systems Qualification, and the POF specification, for the convention of quoting depth accuracy as a tolerance at 80 percent certainty.</p>
+    <p><b>Regulation and background rates.</b> 49 CFR 192.917 and 195.452 for threat identification. PHMSA incident data for benchmarking the non-corrosion background rate.</p>
+    <p>Standards are revised; check the current edition before citing an equation in a formal assessment.</p>
+  </div></details>
+
+  <details><summary>How to validate this model</summary><div class="dbody">
+    <p><b>Verify the arithmetic first.</b> Reproduce the critical depth for one line by hand from the equations above, or against any independent Modified B31G calculator. The audit panel below prints every intermediate value for exactly this purpose. This step proves the code is right; it says nothing about whether the model is right.</p>
+    <p><b>Then hindcast.</b> This is the evidence that convinces people. Rebuild the inputs as they stood at a past date, predict failures over the period since, and compare with what actually happened. Report predicted against observed as a ratio. Anything within a factor of two or three is credible for this class of model; further out, apply the ratio as a bias factor or disclose it.</p>
+    <p><b>Test ranking separately from magnitude.</b> These are different questions and a model can pass one and fail the other. Even if the absolute numbers are off by five, the tool is useful if it puts the lines that fail near the top. Take your actual failures and ask what share of them came from the worst 20 percent of ranked mileage. If failures are spread evenly across the ranking, the model is not discriminating and the ranking should not drive spending. For a fleet-ranking tool this test matters more than absolute calibration.</p>
+    <p><b>Validate the inputs, not just the output.</b> Depth calls should be checked against field measurement on dig verifications, per API 1163. If the tool is not meeting its stated tolerance, the depth uncertainty entered here is wrong and every probability downstream is wrong with it.</p>
+    <p><b>Find out what actually drives the answer.</b> Vary each input across its plausible range and watch what moves. If the result is governed by a number nobody has confidence in, that is where the next data spend belongs &mdash; not wherever the risk happens to be highest.</p>
+    <p><b>Benchmark externally.</b> Compare the fleet-wide computed failure rate against PHMSA incident rates per mile-year for the same commodity and class. Gathering lines were historically under-reported, so treat this as a sanity band rather than a target.</p>
+    <p><b>Be honest about what cannot be validated.</b> With twenty or thirty leaks a year across the fleet, the leak side can be tested statistically within a few years. The rupture side may have no events in the entire history of the asset, and no amount of data will validate it empirically &mdash; there, all you can do is verify the equations, benchmark the inputs, and say so. The consequence side is the same: too few events to validate against outcomes, so treat it as a documented and agreed assumption set that is sensitivity-tested, never as a measured quantity.</p>
+  </div></details>
+</section>
+
+<section id="calcs" class="s-indigo" style="display:none">
+  <div class="eyebrow"><span class="bdg">Audit</span> Show the working</div>
+  <h2>Worked calculation</h2>
+  <p class="hint">Every number behind one point on the chart, with the actual values substituted.</p>
+  <div class="btnrow" style="margin-top:0;margin-bottom:12px">
+    <select id="calcpick" style="max-width:340px" onchange="showCalc()"></select>
+  </div>
+  <div class="calc" id="calcbody"></div>
+</section>
+
+</div>
+
+<script>
+var SEL=null,CAL=1;
+var ROWS=[],RES=[],BASE={leak:2e-4,rup:2e-5},LIM={a:100,b:5000};
+
+/* ---------- field definitions, guidance lives with the field ---------- */
+var IF=[
+ {k:'cat',t:'text',lbl:'Category',w:'cat',
+  g:'Rows sharing a category name are rolled up into one point when you choose the rolled-up view. Use it when a class contains several sizes or wall thicknesses.',r:'Free text'},
+ {k:'name',t:'text',lbl:'Line entry',w:'nm',
+  g:'A specific size, wall and pressure combination within the category.',r:'Free text'},
+ {k:'svc',t:'sel',opts:['liquid','gas'],lbl:'Service',w:'sel',
+  g:'Sets marker shape. Circles are liquid, squares are gas.'},
+ {k:'basis',t:'sel',opts:['ILI','Leak history','Estimated'],lbl:'Evidence',w:'sel',
+  g:'ILI uses measured depth and growth rate. Leak history uses your own leak count divided by mile-years and ignores the corrosion model entirely. Estimated derives depth from rate times age and widens the uncertainty to match.',
+  r:'Use leak history wherever you have it. It is stronger evidence than any model.'},
+ {k:'cnt',t:'num',s:'1',lbl:'Lines',w:'w1',
+  g:'How many lines of this exact type. Scales the fleet total; does not move the point.'},
+ {k:'len',t:'num',s:'0.1',lbl:'Length<br>mi ea',w:'w2',
+  g:'Length of one line, not the class total.',r:'Flowlines under 1 mi. Trunklines 10 to 40.'},
+ {k:'od',t:'num',s:'0.125',lbl:'OD<br>in',w:'w2',g:'Nominal outside diameter.'},
+ {k:'wt',t:'num',s:'0.001',lbl:'WT<br>in',w:'w2',g:'Nominal wall. Not the corroded remainder.'},
+ {k:'smys',t:'num',s:'1000',lbl:'SMYS<br>psi',w:'w3',
+  g:'From the grade.',r:'Gr B 35,000. X42 42,000. X52 52,000. X60 60,000. X65 65,000.'},
+ {k:'pop',t:'num',s:'10',lbl:'Op press<br>psi',w:'w2',
+  g:'Normal running pressure from SCADA. Not MAOP and not design. Using MAOP on a line that runs well below it overstates rupture badly, and is the most common way this kind of model goes wrong.'},
+ {k:'age',t:'num',s:'1',lbl:'Age<br>yr',w:'w1',b:['Estimated'],
+  g:'Years in service. Used with the corrosion rate to estimate current depth when you have no inspection.'},
+ {k:'d0',t:'num',s:'1',lbl:'Depth now<br>%WT',w:'w2',b:['ILI'],
+  g:'Deepest metal loss present today as a percentage of wall, from the latest run. The single strongest input in the model.'},
+ {k:'tol',t:'num',s:'1',lbl:'Depth unc<br>±%WT',w:'w2',b:['ILI','Estimated'],
+  g:'How well you know that depth, at 80 percent certainty. On inspected lines this often matters more than the growth rate itself.',
+  r:'MFL about 10. UT 5 to 8. Estimated basis defaults to 25.'},
+ {k:'cr',t:'num',s:'0.5',lbl:'Corr rate<br>mpy',w:'w2',b:['ILI','Estimated'],
+  g:'What you measured, from run-to-run comparison, wall loss over service life, or a leak repair. Enter what is happening, not what the programme was designed to achieve.',
+  r:'MIC and pitting 15 to 50. General internal 3 to 15. External under good CP 1 to 5. External at a holiday 10 to 20.'},
+ {k:'cov',t:'num',s:'0.05',lbl:'Rate<br>COV',w:'w1',b:['ILI','Estimated'],
+  g:'Scatter of the rate between locations, standard deviation over mean. This is what creates the probability. Enter zero and you get a cliff edge instead of a risk.',
+  r:'MIC and pitting 0.4 to 0.6. General internal 0.25 to 0.35. External 0.3 to 0.5.'},
+ {k:'nf',t:'num',s:'1',lbl:'Features<br>per line',w:'w2',b:['ILI','Estimated'],
+  g:'Features of comparable depth to the deepest one you entered, not every feature on the line. The model applies the deepest depth to all of them, so counting shallow features here makes the answer conservative without making it better. Take the count from a depth histogram, within about 10 percent of wall of the deepest.'},
+ {k:'lf',t:'num',s:'0.05',lbl:'Long-defect<br>fraction',w:'w3',b:['ILI','Estimated'],
+  g:'Share of features long enough to burst rather than perforate. Long means roughly three times the square root of diameter times wall, about 5 inches on a 12 inch line. The main lever on the rupture plot, so measure it from the ILI length column rather than assuming.',
+  r:'Isolated pitting and MIC 0.05 to 0.10. General or grooving 0.15 to 0.25. Axial channelling 0.30 up.'},
+ {k:'lk',t:'num',s:'1',lbl:'Leaks<br>observed',w:'w2',b:['Leak history'],
+  g:'Number of loss-of-containment leaks recorded on this class over the exposure period. Zero is a valid entry; it does not produce zero risk.'},
+ {k:'rup',t:'num',s:'1',lbl:'Ruptures<br>observed',w:'w2',b:['Leak history'],
+  g:'Ruptures recorded over the same period, counted separately from leaks. Usually zero.'},
+ {k:'my',t:'num',s:'10',lbl:'Mile-years<br>exposure',w:'w3',b:['Leak history'],
+  g:'Total mile-years the leak count was accumulated over. Lines times length times years of record. Getting this right matters as much as the leak count.'}
+];
+var CF=[
+ {k:'vol',lbl:'Release<br>bbl',w:'w3',
+  gl:'Barrels escaping before the leak is detected and isolated. A pinhole under your detection threshold can run for days, so a small hole is not always a small release. Zero for gas.',
+  gr:'Volume pumped before shutdown plus drain-down between valves, limited by elevation. Line contents run about 5.1 times ID squared barrels per mile, roughly 770 bbl per mile on a 12 inch line.'},
+ {k:'cpb',lbl:'Cleanup<br>$/bbl',w:'w3',
+  gl:'All-in remediation per barrel: response, excavation, disposal, monitoring, closure.',
+  gr:'Higher than the leak figure, because rupture volumes reach receptors a leak never would.',
+  r:'Dry soil or pasture $500 to $1,500. Wetland or near a creek $2,000 to $5,000. Navigable water or a drinking water intake $5,000 to $50,000 and up.'},
+ {k:'def',lbl:'Deferred<br>per day',w:'w4',
+  gl:'Throughput that stops. Follow the dependency, not the pipe.',
+  gr:'Include cascading shut-ins. A gas lift trunkline outage defers the oil at every pad it feeds, and a sales gas outage backs out the wells behind it.'},
+ {k:'dys',lbl:'Days<br>down',w:'w1',
+  gl:'Detection, isolation, permits, repair, restart.',gr:'Cut-out and welding. Weeks rather than days at a crossing.',
+  r:'Leak 1 to 5 days. Rupture 7 to 21. Rupture at a crossing 30 or more.'},
+ {k:'nb',lbl:'Netback<br>$/unit',w:'w2',
+  gl:'Margin lost per unit, not sale price. If production is deferred and comes back later, enter only the portion truly lost.',
+  gr:'Same basis as the leak column.'},
+ {k:'rep',lbl:'Repair<br>$',w:'w5',
+  gl:'Access, excavation, clamp or sleeve, restoration.',gr:'Full replacement of the damaged section. A bored crossing is an order of magnitude above open cut.',
+  r:'Leak $30k to $250k. Rupture $500k to $2M. Crossing replacement higher.'}
+];
+
+var DEF={cat:'New category',name:'New line',svc:'liquid',basis:'ILI',cnt:1,len:5,od:8.625,wt:0.25,
+ smys:42000,pop:600,age:10,d0:30,tol:10,cr:6,cov:0.35,nf:50,lf:0.15,lk:0,rup:0,my:100,
+ L:{vol:100,cpb:1200,def:2000,dys:3,nb:25,rep:80000},
+ R:{vol:1500,cpb:2500,def:2000,dys:8,nb:25,rep:600000}};
+
+var DEMO=[
+ {cat:'Flowlines',name:'4" x 0.237 Gr B, 250 psi',svc:'liquid',basis:'Leak history',cnt:120,len:0.90,
+  od:4.5,wt:0.237,smys:35000,pop:250,age:8,d0:45,tol:25,cr:35,cov:0.5,nf:40,lf:0.05,lk:34,rup:0,my:864,
+  L:{vol:20,cpb:1000,def:300,dys:3,nb:25,rep:30000},R:{vol:150,cpb:1500,def:300,dys:5,nb:25,rep:60000}},
+ {cat:'Flowlines',name:'6" x 0.280 Gr B, 300 psi',svc:'liquid',basis:'Leak history',cnt:80,len:1.10,
+  od:6.625,wt:0.280,smys:35000,pop:300,age:8,d0:40,tol:25,cr:28,cov:0.5,nf:45,lf:0.05,lk:11,rup:0,my:704,
+  L:{vol:35,cpb:1000,def:500,dys:3,nb:25,rep:35000},R:{vol:200,cpb:1500,def:500,dys:5,nb:25,rep:70000}},
+ {cat:'Oil trunkline',name:'12" x 0.250 X52, 900 psi',svc:'liquid',basis:'ILI',cnt:4,len:18,
+  od:12.75,wt:0.250,smys:52000,pop:900,age:16,d0:40,tol:10,cr:6,cov:0.30,nf:120,lf:0.15,lk:0,rup:0,my:1152,
+  L:{vol:250,cpb:1200,def:45000,dys:4,nb:25,rep:150000},R:{vol:3500,cpb:2500,def:45000,dys:12,nb:25,rep:1200000}},
+ {cat:'Oil trunkline',name:'16" x 0.312 X52, 900 psi',svc:'liquid',basis:'ILI',cnt:2,len:22,
+  od:16,wt:0.312,smys:52000,pop:900,age:12,d0:32,tol:10,cr:5,cov:0.30,nf:150,lf:0.15,lk:0,rup:0,my:528,
+  L:{vol:320,cpb:1200,def:60000,dys:4,nb:25,rep:180000},R:{vol:5200,cpb:2500,def:60000,dys:12,nb:25,rep:1500000}},
+ {cat:'Wet trunkline at crossings',name:'12" x 0.312 X52, 1100 psi',svc:'liquid',basis:'ILI',cnt:4,len:12,
+  od:12.75,wt:0.312,smys:52000,pop:1100,age:14,d0:50,tol:10,cr:9,cov:0.35,nf:150,lf:0.20,lk:0,rup:0,my:672,
+  L:{vol:400,cpb:3000,def:30000,dys:4,nb:25,rep:250000},R:{vol:4000,cpb:4000,def:30000,dys:14,nb:25,rep:2000000}},
+ {cat:'LP gas gathering',name:'8" x 0.250 X42, 150 psi',svc:'gas',basis:'Estimated',cnt:10,len:8,
+  od:8.625,wt:0.250,smys:42000,pop:150,age:15,d0:0,tol:25,cr:4,cov:0.40,nf:60,lf:0.10,lk:0,rup:0,my:1200,
+  L:{vol:0,cpb:0,def:3000,dys:2,nb:2.5,rep:40000},R:{vol:0,cpb:0,def:8000,dys:6,nb:2.5,rep:250000}},
+ {cat:'HP gas lift',name:'10" x 0.365 X52, 1900 psi',svc:'gas',basis:'ILI',cnt:3,len:25,
+  od:10.75,wt:0.365,smys:52000,pop:1900,age:11,d0:25,tol:10,cr:3,cov:0.30,nf:90,lf:0.15,lk:0,rup:0,my:825,
+  L:{vol:0,cpb:0,def:12000,dys:3,nb:25,rep:80000},R:{vol:0,cpb:0,def:12000,dys:10,nb:25,rep:500000}},
+ {cat:'Sales gas',name:'16" x 0.375 X60, 1100 psi',svc:'gas',basis:'ILI',cnt:2,len:40,
+  od:16,wt:0.375,smys:60000,pop:1100,age:9,d0:20,tol:10,cr:2.5,cov:0.30,nf:140,lf:0.15,lk:0,rup:0,my:720,
+  L:{vol:0,cpb:0,def:25000,dys:2,nb:12,rep:60000},R:{vol:0,cpb:0,def:25000,dys:8,nb:12,rep:600000}}
+];
+
+/* ---------- guidance popover ---------- */
+var POP=document.getElementById('pop');
+function showPop(ev,title,body,rng){
+  POP.innerHTML='<b>'+title+'</b>'+body+(rng?'<span class="rng">'+rng+'</span>':'');
+  POP.style.display='block';
+  var r=ev.currentTarget.getBoundingClientRect();
+  var x=r.left+window.pageXOffset, y=r.bottom+window.pageYOffset+6;
+  var w=POP.offsetWidth;
+  if(x+w>window.innerWidth-12)x=Math.max(12,window.innerWidth-w-12);
+  POP.style.left=x+'px';POP.style.top=y+'px';
+  ev.stopPropagation();
+}
+document.addEventListener('click',function(){POP.style.display='none';});
+
+function hdr(row,label,title,body,rng,cls){
+  var th=document.createElement('th');
+  if(cls)th.className=cls;
+  th.innerHTML=label;
+  if(body){
+    var b=document.createElement('button');
+    b.className='ib';b.textContent='\u24D8';b.type='button';
+    b.onclick=function(e){showPop(e,title,body,rng);};
+    th.appendChild(b);
+  }
+  row.appendChild(th);
+}
+function buildHeads(){
+  var h=document.getElementById('h_int');h.innerHTML='';
+  IF.forEach(function(f){hdr(h,f.lbl,f.lbl.replace(/<br>/g,' '),f.g,f.r);});
+  h.appendChild(document.createElement('th'));
+  var h1=document.getElementById('h_cof1');h1.innerHTML='';
+  var th0=document.createElement('th');th0.rowSpan=2;th0.textContent='Line entry';h1.appendChild(th0);
+  [['Leak','grpL'],['Rupture','grpR']].forEach(function(m){
+    var t=document.createElement('th');t.className='grp '+m[1];t.colSpan=CF.length;t.textContent=m[0];h1.appendChild(t);});
+  var h2=document.getElementById('h_cof2');h2.innerHTML='';
+  ['gl','gr'].forEach(function(g){
+    CF.forEach(function(f){hdr(h2,f.lbl,f.lbl.replace(/<br>/g,' '),f[g],f.r);});
+  });
+}
+
+/* ---------- row rendering ---------- */
+function addRow(d){ROWS.push(JSON.parse(JSON.stringify(d||DEF)));render();}
+function clearAll(){ROWS=[];render();['out','recs','calcs','check'].forEach(function(i){document.getElementById(i).style.display='none';});}
+function loadDemo(){ROWS=JSON.parse(JSON.stringify(DEMO));render();}
+function delRow(i){ROWS.splice(i,1);render();}
+function nv(v){var x=parseFloat(v);return isFinite(x)?x:0;}
+
+function render(){
+  var tb=document.querySelector('#t_int tbody');tb.innerHTML='';
+  var tc=document.querySelector('#t_cof tbody');tc.innerHTML='';
+  ROWS.forEach(function(r,i){
+    var tr=document.createElement('tr');
+    IF.forEach(function(f){
+      var td=document.createElement('td');
+      var used=!f.b||f.b.indexOf(r.basis)>=0;
+      td.className=(f.w||'')+(used?'':' dim');
+      var e;
+      if(f.t==='sel'){
+        e=document.createElement('select');
+        f.opts.forEach(function(o){var op=document.createElement('option');op.value=o;op.textContent=o;
+          if(r[f.k]===o)op.selected=true;e.appendChild(op);});
+        e.onchange=function(){r[f.k]=e.value;if(f.k==='basis'){if(e.value==='Estimated')r.tol=25;render();}};
+      }else if(f.t==='text'){
+        e=document.createElement('input');e.type='text';e.value=r[f.k];
+        e.oninput=function(){r[f.k]=e.value;syncNames();};
+      }else{
+        e=document.createElement('input');e.type='number';e.step=f.s||'any';e.value=r[f.k];
+        if(!used)e.disabled=true;
+        e.oninput=function(){r[f.k]=nv(e.value);};
+      }
+      td.appendChild(e);tr.appendChild(td);
+    });
+    var td=document.createElement('td');
+    var b=document.createElement('button');b.className='del';b.innerHTML='&times;';b.title='Remove';
+    b.onclick=function(){delRow(i);};td.appendChild(b);tr.appendChild(td);
+    tb.appendChild(tr);
+
+    var t2=document.createElement('tr');
+    var nc=document.createElement('td');nc.className='nm';nc.textContent=r.name;t2.appendChild(nc);
+    ['L','R'].forEach(function(m){
+      CF.forEach(function(f){
+        var c=document.createElement('td');c.className=f.w;
+        var e=document.createElement('input');e.type='number';e.value=r[m][f.k];
+        e.oninput=function(){r[m][f.k]=nv(e.value);};
+        c.appendChild(e);t2.appendChild(c);
+      });
+    });
+    tc.appendChild(t2);
+  });
+}
+function syncNames(){
+  var rs=document.querySelectorAll('#t_cof tbody tr');
+  ROWS.forEach(function(r,i){if(rs[i])rs[i].firstChild.textContent=r.name;});
+}
+
+/* ---------- engineering ---------- */
+function foliasM(L,D,t){var lam=L*L/(D*t);
+  return lam<=50?Math.sqrt(1+0.6275*lam-0.003375*lam*lam):0.032*lam+3.3;}
+function dCritBurst(L,D,t,smys,pop){
+  var M=foliasM(L,D,t),flow=smys+10000,pcap=2*t*flow/D,ratio=pop/pcap;
+  if(ratio>=1)return 0;
+  return (1-ratio)/(0.85*(1-ratio/M));
+}
+function hoopPct(D,t,smys,pop){return 100*(pop*D/(2*t))/smys;}
+var _sp=null;
+function randn(){if(_sp!==null){var s=_sp;_sp=null;return s;}
+  var u=0,v=0;while(u===0)u=Math.random();while(v===0)v=Math.random();
+  var r=Math.sqrt(-2*Math.log(u));_sp=r*Math.sin(2*Math.PI*v);return r*Math.cos(2*Math.PI*v);}
+function qNorm(z){if(z<0)return 1-qNorm(-z);
+  var t=1/(1+0.2316419*z);
+  var p=t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+  return 0.3989422804014327*Math.exp(-0.5*z*z)*p;}
+function survLN(x,mu,sig){return x>0?qNorm((Math.log(x)-mu)/sig):1;}
+function series(pairs){var s=0;
+  for(var i=0;i<pairs.length;i++){var p=pairs[i][0],n=pairs[i][1];
+    if(p<=0||n<=0)continue; if(p>=1)return 1; s+=n*Math.log1p(-p);}
+  return -Math.expm1(s);}
+
+function pof(r,Y,N,mcov){
+  var Ld=3*Math.sqrt(r.od*r.wt);
+  var dcR=dCritBurst(Ld,r.od,r.wt,r.smys,r.pop);
+  var canRup=dcR>0&&dcR<1;
+  var out={dcR:canRup?dcR:null,canRup:canRup,Ld:Ld,hoop:hoopPct(r.od,r.wt,r.smys,r.pop),basis:r.basis};
+
+  if(r.basis==='Leak history'){
+    var my=Math.max(r.my,0.1);
+    var lam=(Math.max(r.lk,0)+0.5)/my;
+    var lamR=canRup?(Math.max(r.rup,0)+0.5)/my:0;
+    out.leakPerMi=Math.max(lam,BASE.leak);
+    out.rupPerMi=canRup?Math.max(lamR,BASE.rup):BASE.rup;
+    out.corrL=lam;out.corrR=lamR;out.driver='history';
+    out.lam=lam;out.lamR=lamR;out.my=my;
+    out.d0used=null;out.pre=0;
+    return out;
+  }
+
+  var d0=r.d0;
+  if(r.basis==='Estimated'){d0=Math.min(95,100*(r.cr/1000)*r.age/r.wt);}
+  out.d0used=d0;
+  var sig=Math.sqrt(Math.log(1+r.cov*r.cov)),mu=Math.log(Math.max(r.cr,1e-6))-sig*sig/2;
+  var sd0=(r.tol/100)/1.2816,frac=d0/100;
+  out.sig=sig;out.mu=mu;out.sd0=sd0;
+
+  function cum(T,long){
+    var sL=0,sR=0,pre=0;
+    for(var i=0;i<N;i++){
+      var d=frac+sd0*randn(); if(d<0)d=0; if(d>0.999)d=0.999;
+      var crit=1,isR=false;
+      if(long&&canRup){var fm=1+mcov*randn(); if(fm<0.4)fm=0.4;
+        var dc=dcR*fm; if(dc<1){crit=dc;isR=true;}}
+      var p;
+      if(d>=crit){p=1;pre++;}
+      else if(T<=0)p=0;
+      else p=survLN(((crit-d)/T)*r.wt*1000,mu,sig);
+      if(isR)sR+=p;else sL+=p;
+    }
+    return {L:sL/N,R:sR/N,pre:pre/N};
+  }
+  function hz(a,b){return (b>a&&a<1)?(b-a)/(1-a):0;}
+
+  var s0=cum(Y,false),s1=cum(Y+1,false);
+  var pShort=hz(s0.L,s1.L),pLong=pShort,pRup=0,pre=s0.pre;
+  if(canRup){var g0=cum(Y,true),g1=cum(Y+1,true);
+    pLong=hz(g0.L,g1.L);pRup=hz(g0.R,g1.R);pre=Math.max(pre,g0.pre);}
+  var nL=r.nf*r.lf,nS=r.nf*(1-r.lf);
+  var pl=series([[pShort,nS],[pLong,nL]]), pr=series([[pRup,nL]]);
+  out.pShort=pShort;out.pLong=pLong;out.pRupF=pRup;out.nL=nL;out.nS=nS;
+  out.plLine=pl;out.prLine=pr;out.pre=pre;
+  out.corrL=CAL*pl/r.len;out.corrR=CAL*pr/r.len;
+  out.leakPerMi=Math.max(out.corrL,BASE.leak);
+  out.rupPerMi=Math.max(out.corrR,BASE.rup);
+  out.driver=(out.corrL>BASE.leak||out.corrR>BASE.rup)?'corrosion':'background';
+  return out;
+}
+function cof(c){return {clean:c.vol*c.cpb,defer:c.def*c.dys*c.nb,rep:c.rep,
+  tot:c.vol*c.cpb+c.def*c.dys*c.nb+c.rep};}
+function zone(v){return v<LIM.a?1:(v>LIM.b?3:2);}
+var ZC=[null,{f:'#e3f0e9',s:'#2f7d5a',n:'Acceptable'},{f:'#faf0da',s:'#a8770f',n:'Tolerable'},
+  {f:'#fbe8e6',s:'#b23a34',n:'Unacceptable'}];
+
+/* ---------- run ---------- */
+function run(){
+  if(!ROWS.length){document.getElementById('status').textContent='Add at least one line.';return;}
+  document.getElementById('status').textContent='Calculating\u2026';
+  var Y=nv(document.getElementById('g_year').value);
+  var N=Math.max(2000,nv(document.getElementById('g_n').value)||20000);
+  var mcov=nv(document.getElementById('g_mcov').value);
+  BASE.leak=nv(document.getElementById('g_bl').value);
+  BASE.rup=nv(document.getElementById('g_br').value);
+  LIM.a=nv(document.getElementById('g_a').value);LIM.b=nv(document.getElementById('g_b').value);
+  CAL=nv(document.getElementById('g_cal').value)||1;
+  setTimeout(function(){
+    RES=ROWS.map(function(r,ix){
+      var h=pof(r,Y,N,mcov),cl=cof(r.L),cr=cof(r.R),ex=r.cnt*r.len;
+      return {r:r,h:h,idx:ix+1,cat:r.cat,name:r.name,svc:r.svc,expo:ex,
+        pL:h.leakPerMi,pR:h.rupPerMi,cL:cl,cR:cr,
+        rL:h.leakPerMi*cl.tot,rR:h.rupPerMi*cr.tot,
+        tL:h.leakPerMi*cl.tot*ex,tR:h.rupPerMi*cr.tot*ex};
+    });
+    draw();recommend();fillCalcPicker();
+    document.getElementById('status').textContent='';
+    ['out','recs','calcs','check'].forEach(function(i){document.getElementById(i).style.display='';});
+    checkModel();
+    document.getElementById('out').scrollIntoView({behavior:'smooth',block:'start'});
+  },20);
+}
+
+function points(mode){
+  var grp=document.getElementById('g_grp').value;
+  var src=RES;
+  if(grp==='cat'){
+    var m={};
+    RES.forEach(function(d){
+      var g=m[d.cat]||(m[d.cat]={cat:d.cat,name:d.cat,svc:d.svc,expo:0,pw:0,tot:0,n:0,mem:[]});
+      g.mem.push(d.idx);
+      var p=mode==='leak'?d.pL:d.pR, c=mode==='leak'?d.cL.tot:d.cR.tot;
+      g.expo+=d.expo;g.pw+=p*d.expo;g.tot+=p*c*d.expo;g.n++;
+      if(d.svc==='gas')g.svc='gas';
+    });
+    src=Object.keys(m).map(function(k,i){
+      var g=m[k],p=g.expo>0?g.pw/g.expo:0;
+      var c=(p>0&&g.expo>0)?g.tot/(p*g.expo):0;
+      return {n:i+1,name:g.cat+(g.n>1?' ('+g.n+' sizes)':''),svc:g.svc,expo:g.expo,p:p,c:c,tot:g.tot,mem:g.mem};
+    });
+  }else{
+    src=RES.map(function(d){
+      var p=mode==='leak'?d.pL:d.pR,c=mode==='leak'?d.cL.tot:d.cR.tot;
+      return {n:d.idx,name:d.cat+' \u2014 '+d.name,svc:d.svc,expo:d.expo,p:p,c:c,tot:p*c*d.expo,mem:[d.idx]};
+    });
+  }
+  return src.filter(function(d){return d.p>0&&d.c>0;});
+}
+
+var W=560,H=450,M={l:76,r:20,t:16,b:58};
+function bounds(){
+  var xs=[],ys=[];
+  ['leak','rupt'].forEach(function(m){points(m).forEach(function(d){xs.push(d.p);ys.push(d.c);});});
+  if(!xs.length)return null;
+  var x0=Math.floor(Math.log10(Math.min.apply(null,xs)))-0.3,
+      x1=Math.ceil(Math.log10(Math.max.apply(null,xs)))+0.3,
+      y0=Math.floor(Math.log10(Math.min.apply(null,ys)))-0.3,
+      y1=Math.ceil(Math.log10(Math.max.apply(null,ys)))+0.3;
+  if(x1-x0>6)x0=x1-6; if(y1-y0>5)y0=y1-5;
+  if(x1-x0<1.4){x0-=0.7;x1+=0.7;} if(y1-y0<1.4){y0-=0.7;y1+=0.7;}
+  return {x0:x0,x1:x1,y0:y0,y1:y1};
+}
+// clip convex polygon (log-space) by half plane sx+sy <= T  (sgn=1) or >= T (sgn=-1)
+function clipHalf(poly,T,sgn){
+  var out=[];
+  function inside(p){return sgn*(p[0]+p[1])<=sgn*T;}
+  for(var i=0;i<poly.length;i++){
+    var a=poly[i],b=poly[(i+1)%poly.length],ia=inside(a),ib=inside(b);
+    if(ia)out.push(a);
+    if(ia!==ib){
+      var da=a[0]+a[1]-T,db=b[0]+b[1]-T,t=da/(da-db);
+      out.push([a[0]+t*(b[0]-a[0]),a[1]+t*(b[1]-a[1])]);
+    }
+  }
+  return out;
+}
+function plot(mode,B){
+  var pw=W-M.l-M.r,ph=H-M.t-M.b,s2=[];
+  var PX=function(lx){return M.l+(lx-B.x0)/(B.x1-B.x0)*pw;};
+  var PY=function(ly){return M.t+ph-(ly-B.y0)/(B.y1-B.y0)*ph;};
+  var s='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" font-family="-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif">';
+  s+='<rect width="'+W+'" height="'+H+'" fill="#fff"/>';
+  var rect=[[B.x0,B.y0],[B.x1,B.y0],[B.x1,B.y1],[B.x0,B.y1]];
+  var la=Math.log10(Math.max(LIM.a,1e-9)),lb=Math.log10(Math.max(LIM.b,LIM.a*1.0001));
+  function band(poly,fill){
+    if(poly.length<3)return '';
+    return '<polygon points="'+poly.map(function(p){return PX(p[0]).toFixed(1)+','+PY(p[1]).toFixed(1);}).join(' ')+
+      '" fill="'+fill+'" stroke="none"/>';
+  }
+  s+=band(clipHalf(rect,la,1),'#e9f2ed');
+  s+=band(clipHalf(clipHalf(rect,lb,1),la,-1),'#fbf4e4');
+  s+=band(clipHalf(rect,lb,-1),'#fbeceb');
+  [[la,'#7fae97'],[lb,'#cf9a95']].forEach(function(t){
+    var seg=clipHalf(clipHalf(rect,t[0]+1e-9,1),t[0]-1e-9,-1);
+    if(seg.length>=2){
+      var pts=seg.map(function(p){return [PX(p[0]),PY(p[1])];});
+      var a=pts[0],b=pts[pts.length-1];
+      for(var i=0;i<pts.length;i++){for(var j=i+1;j<pts.length;j++){
+        if(Math.hypot(pts[i][0]-pts[j][0],pts[i][1]-pts[j][1])>Math.hypot(a[0]-b[0],a[1]-b[1])){a=pts[i];b=pts[j];}}}
+      s+='<line x1="'+a[0].toFixed(1)+'" y1="'+a[1].toFixed(1)+'" x2="'+b[0].toFixed(1)+'" y2="'+b[1].toFixed(1)+
+         '" stroke="'+t[1]+'" stroke-width="1.2" stroke-dasharray="5 4"/>';
+    }
+  });
+  var i;
+  for(i=Math.ceil(B.x0);i<=Math.floor(B.x1);i++){
+    s+='<line x1="'+PX(i).toFixed(1)+'" y1="'+M.t+'" x2="'+PX(i).toFixed(1)+'" y2="'+(M.t+ph)+'" stroke="#dfe4ea" stroke-width="0.6"/>';
+    s+='<text x="'+PX(i).toFixed(1)+'" y="'+(M.t+ph+16)+'" font-size="10.5" fill="#7c8894" text-anchor="middle">1e'+i+'</text>';}
+  for(i=Math.ceil(B.y0);i<=Math.floor(B.y1);i++){
+    s+='<line x1="'+M.l+'" y1="'+PY(i).toFixed(1)+'" x2="'+(M.l+pw)+'" y2="'+PY(i).toFixed(1)+'" stroke="#dfe4ea" stroke-width="0.6"/>';
+    s+='<text x="'+(M.l-8)+'" y="'+(PY(i)+3.5).toFixed(1)+'" font-size="10.5" fill="#7c8894" text-anchor="end">'+fmt$(Math.pow(10,i))+'</text>';}
+  s+='<rect x="'+M.l+'" y="'+M.t+'" width="'+pw+'" height="'+ph+'" fill="none" stroke="#c1c9d1"/>';
+
+  var pts=points(mode);
+  var maxE=Math.max.apply(null,pts.map(function(d){return d.expo;}))||1;
+  var mk=pts.map(function(d){
+    var z=zone(d.p*d.c),rr=11+13*Math.sqrt(d.expo/maxE);
+    return {x:PX(Math.log10(d.p)),y:PY(Math.log10(d.c)),r:rr,z:z,d:d};});
+  mk.sort(function(a,b){return b.r-a.r;});
+  mk.forEach(function(m){
+    var c=ZC[m.z],on=SEL!=null&&m.d.mem.indexOf(SEL)>=0;
+    var g='<g style="cursor:pointer" onclick="sel('+m.d.mem[0]+')">';
+    if(on)g+=(m.d.svc==='gas'
+      ? '<rect x="'+(m.x-m.r*0.9-5).toFixed(1)+'" y="'+(m.y-m.r*0.9-5).toFixed(1)+'" width="'+(2*m.r*0.9+10).toFixed(1)+'" height="'+(2*m.r*0.9+10).toFixed(1)+'" rx="4" fill="none" stroke="#1b1f24" stroke-width="2"/>'
+      : '<circle cx="'+m.x.toFixed(1)+'" cy="'+m.y.toFixed(1)+'" r="'+(m.r+5).toFixed(1)+'" fill="none" stroke="#1b1f24" stroke-width="2"/>');
+    if(m.d.svc==='gas'){var h=m.r*0.9;
+      g+='<rect x="'+(m.x-h).toFixed(1)+'" y="'+(m.y-h).toFixed(1)+'" width="'+(2*h).toFixed(1)+'" height="'+(2*h).toFixed(1)+
+         '" rx="2" fill="'+c.f+'" stroke="'+c.s+'" stroke-width="1.7"/>';
+    }else{
+      g+='<circle cx="'+m.x.toFixed(1)+'" cy="'+m.y.toFixed(1)+'" r="'+m.r.toFixed(1)+
+         '" fill="'+c.f+'" stroke="'+c.s+'" stroke-width="1.7"/>';}
+    g+='<text x="'+m.x.toFixed(1)+'" y="'+(m.y+4).toFixed(1)+'" font-size="12" font-weight="700" fill="'+c.s+
+       '" text-anchor="middle" style="pointer-events:none">'+m.d.n+'</text></g>';
+    s2.push(g);
+  });
+  s+=s2.join('');
+  s+='<text x="'+(M.l+pw/2)+'" y="'+(H-14)+'" font-size="11" fill="#4a545e" text-anchor="middle">Probability of failure, per mile-year</text>';
+  s+='<text x="'+(M.l-60)+'" y="'+(M.t-4)+'" font-size="11" fill="#4a545e">Consequence, $ per event</text>';
+  return s+'</svg>';
+}
+function esc(t){return String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function fmt$(v){if(!isFinite(v))return '\u2014';var a=Math.abs(v);
+  if(a>=1e9)return '$'+(v/1e9).toFixed(2)+'B';
+  if(a>=1e6)return '$'+(v/1e6).toFixed(2)+'M';
+  if(a>=1e3)return '$'+(v/1e3).toFixed(1)+'k';return '$'+v.toFixed(0);}
+function fmtP(v){if(!(v>0))return '\u2014';if(v>=0.01)return v.toFixed(3);
+  var e=Math.floor(Math.log10(v));return (v/Math.pow(10,e)).toFixed(2)+'e'+e;}
+
+function draw(){
+  var B=bounds();
+  if(!B){document.getElementById('p_leak').innerHTML='<p class="hint">Nothing to plot.</p>';return;}
+  document.getElementById('p_leak').innerHTML=plot('leak',B);
+  document.getElementById('p_rupt').innerHTML=plot('rupt',B);
+  var canR=RES.filter(function(d){return d.h.canRup;}).length;
+  document.getElementById('n_leak').textContent=points('leak').length+' plotted';
+  document.getElementById('n_rupt').textContent=canR+' of '+RES.length+' entries can rupture';
+
+  var tL=RES.reduce(function(a,d){return a+d.tL;},0),tR=RES.reduce(function(a,d){return a+d.tR;},0);
+  var mi=RES.reduce(function(a,d){return a+d.expo;},0);
+  var un=RES.filter(function(d){return zone(d.rL)===3||zone(d.rR)===3;}).length;
+  var top=RES.slice().sort(function(a,b){return (b.tL+b.tR)-(a.tL+a.tR);})[0];
+  _ki=0;
+  document.getElementById('kpis').innerHTML=
+    kpi('Fleet risk, leak',fmt$(tL)+'/yr')+kpi('Fleet risk, rupture',fmt$(tR)+'/yr')+
+    kpi('Rupture share',(tL+tR>0?(100*tR/(tL+tR)).toFixed(0):'0')+'%')+
+    kpi('Entries unacceptable',un+' of '+RES.length)+
+    kpi('Total exposure',mi.toFixed(0)+' mi')+kpi('Largest contributor',top?top.name:'\u2014');
+
+  document.querySelector('#t_res thead').innerHTML='<tr><th>#</th><th>Category</th><th>Line entry</th><th>Evidence</th>'+
+    '<th class="num-r">Hoop<br>%SMYS</th><th class="num-r">Burst<br>depth</th><th>Driving<br>threat</th>'+
+    '<th class="num-r">PoF leak</th><th class="num-r">CoF leak</th><th class="num-r">Risk leak<br>$/mi-yr</th><th>Zone</th>'+
+    '<th class="num-r">PoF rupt</th><th class="num-r">CoF rupt</th><th class="num-r">Risk rupt<br>$/mi-yr</th><th>Zone</th>'+
+    '<th class="num-r">Fleet $/yr</th></tr>';
+  var tb=document.querySelector('#t_res tbody');tb.innerHTML='';
+  RES.slice().sort(function(a,b){return (b.tL+b.tR)-(a.tL+a.tR);}).forEach(function(d){
+    var tr=document.createElement('tr');
+    tr.id='row'+d.idx;
+    if(SEL===d.idx)tr.className='hl';
+    tr.style.cursor='pointer';
+    tr.onclick=function(){sel(d.idx);};
+    function c(v,cl){var td=document.createElement('td');if(cl)td.className=cl;td.innerHTML=v;tr.appendChild(td);}
+    c('<b>'+d.idx+'</b>','num-r');
+    c(esc(d.cat));c(esc(d.name));c(d.h.basis);
+    c(d.h.hoop.toFixed(0),'num-r');
+    c(d.h.canRup?(d.h.dcR*100).toFixed(0)+'%':'<span style="color:#2f7d5a">leak only</span>','num-r');
+    c(d.h.driver==='corrosion'?'Corrosion':(d.h.driver==='history'?'Leak record':'<span style="color:#a8770f">Background</span>'));
+    c(fmtP(d.pL),'num-r');c(fmt$(d.cL.tot),'num-r');c(fmt$(d.rL),'num-r');
+    c('<span class="pill p'+zone(d.rL)+'">'+ZC[zone(d.rL)].n+'</span>');
+    c(fmtP(d.pR),'num-r');c(fmt$(d.cR.tot),'num-r');c(fmt$(d.rR),'num-r');
+    c('<span class="pill p'+zone(d.rR)+'">'+ZC[zone(d.rR)].n+'</span>');
+    c('<b>'+fmt$(d.tL+d.tR)+'</b>','num-r');
+    tb.appendChild(tr);
+  });
+
+  var kl=points('leak').concat(points('rupt')),seen={},items=[];
+  kl.forEach(function(d){if(seen[d.n])return;seen[d.n]=1;
+    var z=zone(d.p*d.c),c=ZC[z];
+    items.push({n:d.n,name:d.name,mem:d.mem});});
+  items.sort(function(a,b){return a.n-b.n;});
+  document.getElementById('keylist').innerHTML='<div class="keylist">'+items.map(function(it){
+    var on=SEL!=null&&it.mem.indexOf(SEL)>=0;
+    return '<div class="keyitem'+(on?' on':'')+'" onclick="sel('+it.mem[0]+')">'+
+      '<span class="kn" style="border-color:#8d99a5;color:#4a545e">'+it.n+'</span><span>'+esc(it.name)+'</span></div>';
+  }).join('')+'</div>';
+
+  var predicted=RES.reduce(function(a,d){return a+d.pL*d.expo;},0);
+  var msg='<b>Read the two plots together.</b> An entry low on the leak plot but present on the rupture plot is often the one to fund: rupture consequence typically runs an order of magnitude above leak, so a probability a thousand times smaller can still dominate. Entries marked leak only cannot burst at their operating stress, and their whole risk sits on the left.';
+  var fl=RES.filter(function(d){return d.h.driver==='background';});
+  if(fl.length)msg+='<br><br><b>'+fl.length+' of '+RES.length+' entries are not corrosion-driven today.</b> Their metal loss is far enough from the limit that it contributes essentially nothing in the next twelve months, so what you are seeing for them is the background rate for third-party damage, weld and material defects. That is the honest answer for a well-maintained line, and it is why inspection spend on those entries buys certainty rather than risk reduction. Switch the horizon to 5 or 10 years to see when corrosion starts to drive.';
+  var wf=RES.filter(function(d){return d.h.pre>0.02;});
+  if(wf.length)msg+='<br><br><b>Check these:</b> '+wf.map(function(d){return esc(d.name)+' ('+(100*d.h.pre).toFixed(0)+'% of draws already past the limit)';}).join('; ')+'. Usually the inspection is stale or the tolerance is too wide.';
+  msg+='<br><br><b>Before the meeting.</b> This model predicts about <b>'+predicted.toFixed(1)+' leaks per year</b> across '+mi.toFixed(0)+' miles. Compare that with what you actually had. If it is out by a factor of five, put the bias factor on your own slide rather than letting someone find it.';
+  document.getElementById('diag').innerHTML=msg;
+}
+var _ki=0;
+function poisLE(k,mu){
+  if(mu<=0)return k>=0?1:0;
+  var t=Math.exp(-mu),sum=t;
+  for(var i=1;i<=k;i++){t*=mu/i;sum+=t;}
+  return Math.min(1,sum);
+}
+function verdict(ratio){
+  if(ratio<=2&&ratio>=0.5)return [1,'Consistent'];
+  if(ratio<=3&&ratio>=0.33)return [2,'Acceptable, worth stating'];
+  return [3,'Out of line \u2014 calibrate or explain'];
+}
+function checkModel(){
+  if(!RES.length){document.getElementById('chkout').innerHTML='<div class="note">Generate the risk plots first.</div>';return;}
+  var yrs=Math.max(nv(document.getElementById('v_yr').value),1);
+  var lkObs=Math.max(nv(document.getElementById('v_lk').value),0);
+  var rpObs=Math.max(nv(document.getElementById('v_rp').value),0);
+  var mi=RES.reduce(function(a,d){return a+d.expo;},0);
+  var pl=RES.reduce(function(a,d){return a+d.pL*d.expo;},0);
+  var pr=RES.reduce(function(a,d){return a+d.pR*d.expo;},0);
+  var expL=pl*yrs, expR=pr*yrs;
+  var obsL=lkObs/yrs, obsR=rpObs/yrs;
+  var ratL=obsL>0?pl/obsL:Infinity;
+  var vL=verdict(ratL);
+  var pL0=poisLE(lkObs,expL), pR0=poisLE(rpObs,expR);
+
+  var modelMi=RES.filter(function(d){return d.h.basis!=='Leak history';}).reduce(function(a,d){return a+d.expo;},0);
+  var histMi=mi-modelMi;
+  var bgRisk=RES.filter(function(d){return d.h.driver==='background';}).reduce(function(a,d){return a+d.tL+d.tR;},0);
+  var totRisk=RES.reduce(function(a,d){return a+d.tL+d.tR;},0);
+
+  var o='';
+  o+='<div class="kpis">'+
+    '<div class="kpi k1"><div class="k">Predicted leaks per year</div><div class="v">'+pl.toFixed(1)+'</div></div>'+
+    '<div class="kpi k2"><div class="k">Actual leaks per year</div><div class="v">'+obsL.toFixed(1)+'</div></div>'+
+    '<div class="kpi k'+(vL[0]===1?'5':(vL[0]===2?'4':'2'))+'"><div class="k">Predicted &divide; actual</div><div class="v">'+
+      (isFinite(ratL)?ratL.toFixed(2)+'\u00d7':'\u2014')+'</div></div>'+
+    '<div class="kpi k6"><div class="k">Fleet exposure</div><div class="v">'+mi.toFixed(0)+' mi</div></div>'+
+    '</div>';
+
+  o+='<table style="margin-bottom:14px"><thead><tr><th>Test</th><th>Result</th><th>Reading</th></tr></thead><tbody>';
+  o+='<tr><td><b>Leak rate agreement</b></td><td>predicted '+pl.toFixed(1)+'/yr vs actual '+obsL.toFixed(1)+'/yr</td>'+
+     '<td><span class="pill p'+vL[0]+'">'+vL[1]+'</span></td></tr>';
+  o+='<tr><td><b>Statistical consistency, leaks</b></td><td>over '+yrs+' years the model expects '+expL.toFixed(1)+
+     ', you recorded '+lkObs+'</td><td>'+(pL0>0.01&&pL0<0.99?'Within the range chance would produce':'Outside what chance explains')+'</td></tr>';
+  o+='<tr><td><b>Ruptures</b></td><td>model expects '+expR.toFixed(2)+' over '+yrs+' years, you recorded '+rpObs+'</td>'+
+     '<td>'+(rpObs===0
+        ? (expR<3?'Consistent \u2014 chance of seeing none is '+(100*Math.exp(-expR)).toFixed(0)+'%'
+                 :'Model over-predicts; seeing none would be unlikely')
+        : (poisLE(rpObs,expR)>0.01?'Consistent':'Outside what chance explains'))+'</td></tr>';
+  o+='<tr><td><b>How much is model, how much is record</b></td><td>'+histMi.toFixed(0)+' mi on leak history, '+
+     modelMi.toFixed(0)+' mi on the corrosion model</td><td>'+
+     (histMi>=modelMi?'Majority of mileage needs no model':'Majority depends on the model')+'</td></tr>';
+  o+='<tr><td><b>Risk not driven by corrosion</b></td><td>'+fmt$(bgRisk)+' of '+fmt$(totRisk)+' ('+
+     (totRisk>0?(100*bgRisk/totRisk).toFixed(0):'0')+'%)</td><td>Sits on the background rate, not on metal loss</td></tr>';
+  o+='</tbody></table>';
+
+  var rec=(isFinite(ratL)&&ratL>0)?1/ratL:1;
+  o+='<div class="note" style="--nb:var(--c-coral-b);--ns:var(--c-coral)">';
+  if(!isFinite(ratL)||obsL===0){
+    o+='<b>No leaks recorded.</b> With '+(mi*yrs).toFixed(0)+' mile-years of exposure and a predicted '+expL.toFixed(1)+
+       ' leaks, a clean record is '+(expL<3?'not surprising':'hard to reconcile with the model')+'. Say so plainly rather than treating zero as proof of anything.';
+  }else if(vL[0]===1){
+    o+='<b>The model agrees with your record.</b> Predicted '+pl.toFixed(1)+' leaks a year against an actual '+obsL.toFixed(1)+
+       '. That is the sentence to lead with. No calibration factor is needed.';
+  }else{
+    o+='<b>The model runs '+(ratL>1?ratL.toFixed(1)+' times high':(1/ratL).toFixed(1)+' times low')+' against your record.</b> '+
+       'Set the calibration factor to about <b>'+rec.toFixed(2)+'</b> and re-run, or leave it at 1 and put the '+ratL.toFixed(1)+
+       '&times; on the slide yourself. Either is defensible. Silently presenting an uncalibrated number is not.';
+  }
+  o+='<br><br><b>What this does and does not prove.</b> Agreement on count means the magnitude is roughly right. It says nothing about whether the ranking is right, which is what the plot is actually for. To test that, take the lines that failed and check where they sat in the ranking &mdash; if failures came disproportionately from the top of the list, the tool is discriminating and the ranking can drive spending.';
+  o+='</div>';
+  document.getElementById('chkout').innerHTML=o;
+}
+function sel(n){
+  SEL=(SEL===n)?null:n;
+  draw();
+  var tr=document.getElementById('row'+n);
+  if(tr&&SEL!=null)tr.scrollIntoView({behavior:'smooth',block:'center'});
+}
+function kpi(k,v){_ki++;return '<div class="kpi k'+(((_ki-1)%6)+1)+'"><div class="k">'+k+'</div><div class="v">'+v+'</div></div>';}
+
+/* ---------- recommendations ---------- */
+function recommend(){
+  var host=document.getElementById('reclist');host.innerHTML='';
+  RES.slice().sort(function(a,b){return (b.tL+b.tR)-(a.tL+a.tR);}).forEach(function(d){
+    var r=d.r,h=d.h,acts=[];
+    var zl=zone(d.rL),zr=zone(d.rR),worst=Math.max(zl,zr);
+    var rupDom=d.tR>d.tL;
+    var C=rupDom?d.cR:d.cL, dom=rupDom?'rupture':'leak';
+    var big=[['cleanup',C.clean],['deferred production',C.defer],['repair',C.rep]]
+      .sort(function(a,b){return b[1]-a[1];})[0];
+    var pct=C.tot>0?Math.round(100*big[1]/C.tot):0;
+
+    // information first when the basis is weak
+    if(r.basis==='Estimated'){
+      acts.push(['Establish the actual condition','No measurement underlies this entry \u2014 depth is inferred from rate times age, with a wide uncertainty band. An inspection here does not reduce risk, it reduces the error bar, and that is what decides whether the spend below is justified at all. In-line inspection if the line is piggable; otherwise guided-wave, targeted digs at the low points, or a coupon and probe programme.']);
+    }else if(r.basis==='ILI'&&r.tol>=12){
+      acts.push(['Tighten the inspection tolerance','Depth uncertainty of \u00b1'+r.tol+'% of wall is doing more to set this probability than the growth rate is. A higher-resolution tool, or UT rather than MFL, would narrow the band without touching the pipe.']);
+    }
+
+    // pressure lever for rupture-capable lines
+    if(h.canRup&&zr>=2){
+      var margin=(h.dcR*100).toFixed(0);
+      acts.push(['Reduce operating pressure','The line is at '+h.hoop.toFixed(0)+'% SMYS and bursts at '+margin+'% wall loss. Pressure is the fastest lever on the rupture plot because it raises that burst depth directly \u2014 enough of a reduction moves the line into the leak-only regime, and the rupture point disappears. Check what a derate costs in throughput before dismissing it.']);
+    }
+    // rate lever
+    if(r.basis!=='Leak history'&&r.cr>=10){
+      acts.push(['Attack the corrosion rate','At '+r.cr+' mpy this line is consuming wall fast enough that the programme is not working as designed. For internal attack: cleaning pig frequency, biocide selection and soak time, dead-leg elimination, and water handling upstream. Verify by inspection before taking credit \u2014 an assumed effectiveness is not a reduction in risk.']);
+    }else if(r.basis==='Leak history'&&h.lam>0.02){
+      acts.push(['Attack the failure rate directly','History gives '+h.lam.toExponential(2)+' leaks per mile-year over '+r.my.toFixed(0)+' mile-years \u2014 this is a measured rate, not a modelled one, so improvement will show up in the same record. Cleaning and biocide programme first, then dead legs and low points. Re-cut the rate annually to see whether it moved.']);
+    }
+    // consequence lever, pointed at the dominant component
+    if(big[1]>0&&pct>=40){
+      var txt;
+      if(big[0]==='cleanup')txt='Cleanup is '+pct+'% of the '+dom+' consequence. Volume released is the lever: closer valve spacing to cut drain-down, faster leak detection to cut the time a release runs, and secondary containment or thicker wall at the water crossings. Nothing here touches the probability \u2014 it moves the point straight down.';
+      else if(big[0]==='deferred production')txt='Deferred production is '+pct+'% of the '+dom+' consequence, so this is a topology problem rather than a metal problem. Looping, a bypass, spare capacity at the receiving facility, or pre-staged repair materials to shorten the outage. Ask what a '+(rupDom?r.R.dys:r.L.dys)+' day outage really costs before spending on the pipe.';
+      else txt='Repair cost is '+pct+'% of the '+dom+' consequence, which usually means access. Pre-staged sleeves and clamps, a repair plan already permitted for the crossings, and contractor arrangements in place before you need them.';
+      acts.push(['Reduce the '+dom+' consequence',txt]);
+    }
+    // economics of replacement for short cheap lines
+    if(r.len<2&&d.rL>LIM.a&&r.basis==='Leak history'){
+      acts.push(['Compare against replacement','At under '+r.len.toFixed(1)+' miles per line and '+r.cnt+' lines, replacement economics often beat inspection and chemical spend. Work out the cost per mile of replacing versus the annual risk of '+fmt$(d.rL+d.rR)+' per mile-year plus the programme cost, and let that decide.']);
+    }
+    if(worst===1&&!acts.length){
+      acts.push(['Monitor only','Both modes sit below your acceptable limit of '+fmt$(LIM.a)+' per mile-year. Keep the current programme, re-run when the next inspection or another year of leak history lands, and spend the money elsewhere.']);
+    }
+
+    var div=document.createElement('div');div.className='rec r'+worst;
+    div.innerHTML='<div class="rechead"><div><h3>'+esc(r.cat)+' \u2014 '+esc(r.name)+'</h3>'+
+      '<div class="drv">Leak '+fmt$(d.rL)+'/mi-yr <span class="pill p'+zl+'">'+ZC[zl].n+'</span> &nbsp; '+
+      'Rupture '+(h.canRup?fmt$(d.rR)+'/mi-yr <span class="pill p'+zr+'">'+ZC[zr].n+'</span>':'not possible at this stress')+
+      ' &nbsp; Fleet '+fmt$(d.tL+d.tR)+'/yr</div></div></div>'+
+      '<ol>'+acts.map(function(a){return '<li><b>'+a[0]+'.</b> '+a[1]+'</li>';}).join('')+'</ol>';
+    host.appendChild(div);
+  });
+}
+
+/* ---------- worked calculation ---------- */
+function fillCalcPicker(){
+  var s=document.getElementById('calcpick');s.innerHTML='';
+  RES.forEach(function(d,i){var o=document.createElement('option');o.value=i;o.textContent=d.cat+' \u2014 '+d.name;s.appendChild(o);});
+  showCalc();
+}
+function showCalc(){
+  var i=parseInt(document.getElementById('calcpick').value||0,10);
+  var d=RES[i];if(!d)return;
+  var r=d.r,h=d.h,o='';
+  function H(t){o+='<span class="h">'+t+'</span>';}
+  function L(t){o+=t+'\n';}
+  function R(t){o+='<span class="r">'+t+'</span>\n';}
+  var Ylbl=document.getElementById('g_year').selectedOptions[0].textContent;
+
+  H('1. Failure mode \u2014 can this line rupture?');
+  L('Long-defect length assumed  L = 3\u221a(D\u00b7t) = 3\u221a('+r.od+' \u00d7 '+r.wt+') = '+h.Ld.toFixed(2)+' in');
+  L('Folias factor              M = '+foliasM(h.Ld,r.od,r.wt).toFixed(3));
+  L('Flow stress                = SMYS + 10,000 = '+(r.smys+10000).toLocaleString()+' psi');
+  L('Intact burst pressure      = 2\u00b7t\u00b7flow/D = 2\u00d7'+r.wt+'\u00d7'+(r.smys+10000).toLocaleString()+'/'+r.od+' = '+(2*r.wt*(r.smys+10000)/r.od).toFixed(0)+' psi');
+  L('Operating pressure         = '+r.pop.toLocaleString()+' psi   \u2192 hoop stress '+h.hoop.toFixed(1)+'% SMYS');
+  L('Modified B31G solved for the depth where burst pressure falls to operating pressure:');
+  if(h.canRup)R('   critical depth = '+(h.dcR*100).toFixed(1)+'% of wall  \u2192 this line CAN rupture');
+  else R('   critical depth solves above 100% of wall  \u2192 LEAK ONLY, no rupture point');
+
+  H('2. Probability of failure \u2014 '+Ylbl);
+  if(r.basis==='Leak history'){
+    L('Evidence basis: leak history. The corrosion model is not used.');
+    L('Leaks recorded             = '+r.lk);
+    L('Exposure                   = '+r.my.toFixed(0)+' mile-years');
+    L('Jeffreys estimate  \u03bb = (leaks + 0.5) / mile-years = ('+r.lk+' + 0.5) / '+r.my.toFixed(0)+' = '+h.lam.toExponential(3));
+    L('Ruptures recorded          = '+r.rup+'  \u2192 \u03bb_rupture = '+(h.lamR>0?h.lamR.toExponential(3):'n/a, leak only'));
+    L('Background floor applied   leak '+BASE.leak.toExponential(1)+', rupture '+BASE.rup.toExponential(1)+' per mile-year');
+    R('   PoF leak    = '+d.pL.toExponential(3)+' per mile-year');
+    R('   PoF rupture = '+d.pR.toExponential(3)+' per mile-year');
+  }else{
+    if(r.basis==='Estimated')
+      L('Depth estimated from rate \u00d7 age = '+r.cr+' mpy \u00d7 '+r.age+' yr / ('+r.wt+' in \u00d7 1000) = '+h.d0used.toFixed(1)+'% of wall');
+    else L('Depth now (measured)       = '+r.d0+'% of wall');
+    L('Depth uncertainty          = \u00b1'+r.tol+'% WT at 80% certainty \u2192 \u03c3 = '+(h.sd0*100).toFixed(1)+'% WT');
+    L('Corrosion rate             = '+r.cr+' mpy, COV '+r.cov+'  \u2192 lognormal \u03bc = '+h.mu.toFixed(4)+', \u03c3 = '+h.sig.toFixed(4));
+    var crit=h.canRup?h.dcR:1, dep=(h.d0used/100);
+    L('');
+    L('For one feature, the rate needed to reach the limit inside the year:');
+    L('   required rate \u2248 (critical depth \u2212 depth now) \u00d7 wall \u00d7 1000');
+    L('                 \u2248 ('+crit.toFixed(3)+' \u2212 '+dep.toFixed(3)+') \u00d7 '+r.wt+' \u00d7 1000 = '+((crit-dep)*r.wt*1000).toFixed(0)+' mpy');
+    L('   share of the rate distribution above that value, averaged over depth draws:');
+    L('      per short feature (leak)   = '+h.pShort.toExponential(3));
+    if(h.canRup)L('      per long feature (rupture) = '+h.pRupF.toExponential(3));
+    L('');
+    L('Features per line = '+r.nf+', long-defect fraction '+r.lf+'  \u2192 '+h.nS.toFixed(0)+' short, '+h.nL.toFixed(0)+' long');
+    L('Series over features:  P = 1 \u2212 (1 \u2212 p)^n');
+    L('   leak, whole line    = '+h.plLine.toExponential(3));
+    if(h.canRup)L('   rupture, whole line = '+h.prLine.toExponential(3));
+    L('Divide by line length '+r.len+' mi, then apply the background floor:');
+    R('   PoF leak    = '+d.pL.toExponential(3)+' per mile-year');
+    R('   PoF rupture = '+d.pR.toExponential(3)+' per mile-year');
+  }
+
+  H('3. Consequence');
+  function row(lbl,a,b){L('  '+String(lbl).padEnd(11)+String(a).padEnd(30)+String(b));}
+  row('','LEAK','RUPTURE');
+  row('cleanup',r.L.vol+' bbl \u00d7 $'+r.L.cpb+'/bbl',r.R.vol+' bbl \u00d7 $'+r.R.cpb+'/bbl');
+  row('',fmt$(d.cL.clean),fmt$(d.cR.clean));
+  row('deferred',r.L.def+'/d \u00d7 '+r.L.dys+' d \u00d7 $'+r.L.nb,r.R.def+'/d \u00d7 '+r.R.dys+' d \u00d7 $'+r.R.nb);
+  row('',fmt$(d.cL.defer),fmt$(d.cR.defer));
+  row('repair',fmt$(d.cL.rep),fmt$(d.cR.rep));
+  R('   CoF leak    = '+fmt$(d.cL.tot)+'          CoF rupture = '+fmt$(d.cR.tot));
+
+  H('4. Risk \u2014 the plotted position');
+  L('Risk = PoF \u00d7 CoF');
+  L('  leak    = '+d.pL.toExponential(3)+' \u00d7 '+fmt$(d.cL.tot)+' = '+fmt$(d.rL)+' per mile-year  \u2192 '+ZC[zone(d.rL)].n);
+  L('  rupture = '+d.pR.toExponential(3)+' \u00d7 '+fmt$(d.cR.tot)+' = '+fmt$(d.rR)+' per mile-year  \u2192 '+ZC[zone(d.rR)].n);
+  L('Exposure = '+r.cnt+' lines \u00d7 '+r.len+' mi = '+d.expo.toFixed(1)+' mi');
+  R('   Fleet risk for this entry = '+fmt$(d.tL+d.tR)+' per year');
+  L('');
+  L('Acceptance limits in use: acceptable below '+fmt$(LIM.a)+', unacceptable above '+fmt$(LIM.b)+' per mile-year.');
+  document.getElementById('calcbody').innerHTML=o;
+}
+
+/* ---------- import / export ---------- */
+var COLS=['cat','name','svc','basis','cnt','len','od','wt','smys','pop','age','d0','tol','cr','cov','nf','lf','lk','rup','my',
+ 'L.vol','L.cpb','L.def','L.dys','L.nb','L.rep','R.vol','R.cpb','R.def','R.dys','R.nb','R.rep'];
+var HEADS=['Category','Line entry','Service','Evidence','Lines','Length mi','OD in','WT in','SMYS psi','Op press psi',
+ 'Age yr','Depth now %WT','Depth unc %WT','Corr rate mpy','Rate COV','Features','Long frac','Leaks','Ruptures','Mile-years',
+ 'Leak release bbl','Leak $/bbl','Leak deferred/day','Leak days','Leak netback','Leak repair $',
+ 'Rupture release bbl','Rupture $/bbl','Rupture deferred/day','Rupture days','Rupture netback','Rupture repair $'];
+function getP(o,p){var q=p.split('.');var v=o;for(var i=0;i<q.length;i++)v=v[q[i]];return v;}
+function setP(o,p,v){var q=p.split('.');var t=o;for(var i=0;i<q.length-1;i++)t=t[q[i]];t[q[q.length-1]]=v;}
+function importPaste(){
+  var txt=document.getElementById('paste').value.trim();
+  var st=document.getElementById('impstatus');
+  if(!txt){st.textContent='Nothing pasted.';return;}
+  var lines=txt.split(/\r?\n/).filter(function(l){return l.trim();});
+  var sep=lines[0].indexOf('\t')>=0?'\t':',';
+  var first=lines[0].toLowerCase();
+  if(first.indexOf('category')>=0||first.indexOf('line entry')>=0)lines.shift();
+  var added=0,bad=0;
+  lines.forEach(function(l){
+    var c=l.split(sep).map(function(x){return x.trim().replace(/^"|"$/g,'').replace(/,/g,'');});
+    if(c.length<COLS.length){bad++;return;}
+    var o=JSON.parse(JSON.stringify(DEF));
+    COLS.forEach(function(k,i){
+      var v=c[i];
+      if(k==='cat'||k==='name')setP(o,k,v||'Unnamed');
+      else if(k==='svc')setP(o,k,/gas/i.test(v)?'gas':'liquid');
+      else if(k==='basis')setP(o,k,/hist/i.test(v)?'Leak history':(/est/i.test(v)?'Estimated':'ILI'));
+      else setP(o,k,nv(v));
+    });
+    ROWS.push(o);added++;
+  });
+  render();
+  st.textContent=added+' row'+(added===1?'':'s')+' loaded'+(bad?', '+bad+' skipped for wrong column count':'')+'.';
+}
+function downloadTemplate(){
+  dl(new Blob([HEADS.join(',')+'\n'],{type:'text/csv'}),'pipeline_risk_template.csv');
+}
+function exportInputs(){
+  var rows=[HEADS.join(',')];
+  ROWS.forEach(function(r){rows.push(COLS.map(function(k){
+    var v=getP(r,k);return typeof v==='string'?'"'+v.replace(/"/g,'""')+'"':v;}).join(','));});
+  dl(new Blob([rows.join('\n')],{type:'text/csv'}),'pipeline_risk_inputs.csv');
+}
+function exportCSV(){
+  var h=['Category','Line entry','Evidence','Lines','Length mi','Exposure mi','Hoop %SMYS','Burst depth %WT',
+   'PoF leak /mi-yr','CoF leak $','Risk leak $/mi-yr','Leak zone',
+   'PoF rupture /mi-yr','CoF rupture $','Risk rupture $/mi-yr','Rupture zone','Fleet risk $/yr'];
+  var rows=[h.join(',')];
+  RES.forEach(function(d){rows.push(['"'+d.cat+'"','"'+d.name+'"',d.h.basis,d.r.cnt,d.r.len,d.expo.toFixed(2),
+    d.h.hoop.toFixed(1),d.h.canRup?(d.h.dcR*100).toFixed(1):'leak only',
+    d.pL.toExponential(4),d.cL.tot.toFixed(0),d.rL.toFixed(1),ZC[zone(d.rL)].n,
+    d.pR.toExponential(4),d.cR.tot.toFixed(0),d.rR.toFixed(1),ZC[zone(d.rR)].n,
+    (d.tL+d.tR).toFixed(0)].join(','));});
+  dl(new Blob([rows.join('\n')],{type:'text/csv'}),'pipeline_risk_results.csv');
+}
+function exportPNG(w){
+  var svg=document.getElementById(w==='leak'?'p_leak':'p_rupt').querySelector('svg');if(!svg)return;
+  var img=new Image();
+  img.onload=function(){var cv=document.createElement('canvas');cv.width=W*2;cv.height=H*2;
+    var cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);
+    cx.drawImage(img,0,0,cv.width,cv.height);cv.toBlob(function(b){dl(b,'risk_plot_'+w+'.png');});};
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(new XMLSerializer().serializeToString(svg));
+}
+function dl(blob,name){var u=URL.createObjectURL(blob),a=document.createElement('a');
+  a.href=u;a.download=name;document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(u);},1000);}
+
+buildHeads();loadDemo();
+</script>
+</body>
+</html>
